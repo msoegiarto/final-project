@@ -20,7 +20,7 @@ This is a webapp that let the user to upload a file and download the translated 
 
 # User flow
 
-![user_flow](./UserFlow.png)
+![user_flow](./images/UserFlow.png)
 
 # Data Model
 
