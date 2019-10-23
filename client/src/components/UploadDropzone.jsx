@@ -5,20 +5,16 @@ class UploadDropzone extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      files: []
+      files: null
     };
   }
+  
   handleChange(files) {
-    this.setState({
-      files: files
-    });
     this.setState({ files: files },
       () => this.props.dropzoneChangeHandler(this)
     );
   }
-  onDrop(files) {
-    console.log(files);
-  }
+  
   render() {
     return (
       <DropzoneArea
@@ -28,7 +24,6 @@ class UploadDropzone extends Component {
         showFileNames={true}
         dropzoneText={'Drag and drop a text file here or click'}
         onChange={this.handleChange.bind(this)}
-        onDrop={this.onDrop.bind(this)}
       />
     )
   }

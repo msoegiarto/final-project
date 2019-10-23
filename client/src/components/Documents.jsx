@@ -1,10 +1,11 @@
 import React from 'react';
-import { withStyles } from "@material-ui/core/styles";
+import axios from 'axios';
 import PropTypes from "prop-types";
 import UploadDropzone from './UploadDropzone';
-import Selects from './Selects';
+import { withStyles } from "@material-ui/core/styles";
 import Grid from "@material-ui/core/Grid";
 import Button from '@material-ui/core/Button';
+import Selects from './Selects';
 import languages from './lang_config.json';
 
 const styles = theme => ({
@@ -23,6 +24,7 @@ class Documents extends React.Component {
   constructor() {
     super();
     this.state = {
+      files: null,
       fromLanguage: '',
       toLanguage: '',
       fromLanguagesList: [],
@@ -39,7 +41,10 @@ class Documents extends React.Component {
   }
 
   dropzoneChangeHandler = (child) => {
-    console.log(child.state);
+    this.setState(oldState => ({
+      ...oldState,
+      files: child.state.files
+    }));
   }
 
   componentDidMount = () => {
@@ -66,10 +71,32 @@ class Documents extends React.Component {
     }));
   }
 
+  onClickTranslate = (event) => {
+    event.preventDefault();
+
+    const url = `/api/translate/documents`;
+    const formData = new FormData();
+    formData.append('file', this.state.files);
+    const data = {
+      formData,
+      fromLanguage: this.state.fromLanguage,
+      toLanguage: this.state.toLanguage
+    }
+    console.log('button clicked.', formData);
+
+    axios.post(url, data)
+      .then(res => {
+        console.log(res);
+      })
+      .catch(err => {
+        console.error(err);
+      });
+  }
+
   render() {
     const { classes } = this.props;
     return (
-      <form className={classes.form} autoComplete="off">
+      <form className={classes.form} autoComplete="off" onSubmit={this.onClickTranslate}>
         <Grid container className={classes.root} spacing={1} alignItems="center">
           <Grid item xs={12} sm={12} md={6}>
             <UploadDropzone dropzoneChangeHandler={this.dropzoneChangeHandler} />
@@ -99,7 +126,7 @@ class Documents extends React.Component {
             </Grid>
           </Grid>
           <Grid item xs={12} sm={12} md={3}>
-            <Button variant="contained" className={classes.button}>Translate</Button>
+            <Button variant="contained" className={classes.button} type="submit">Translate</Button>
           </Grid>
         </Grid>
       </form>
