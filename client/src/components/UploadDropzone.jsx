@@ -12,6 +12,9 @@ class UploadDropzone extends Component {
     this.setState({
       files: files
     });
+    this.setState({ files: files },
+      () => this.props.dropzoneChangeHandler(this)
+    );
   }
   onDrop(files) {
     console.log(files);

@@ -4,6 +4,7 @@ import PropTypes from "prop-types";
 import UploadDropzone from './UploadDropzone';
 import Selects from './Selects';
 import Grid from "@material-ui/core/Grid";
+import Button from '@material-ui/core/Button';
 import languages from './lang_config.json';
 
 const styles = theme => ({
@@ -12,6 +13,9 @@ const styles = theme => ({
   },
   form: {
     margin: theme.spacing(1),
+  },
+  button: {
+    width: 200
   }
 });
 
@@ -26,36 +30,33 @@ class Documents extends React.Component {
     }
   }
 
+  selectChangeHandler = (child) => {
+    this.setState(oldState => ({
+      ...oldState,
+      [child.state.name]: child.state.value
+    }), () => this.filterLanguagesList(child.state.name));
+
+  }
+
+  dropzoneChangeHandler = (child) => {
+    console.log(child.state);
+  }
+
   componentDidMount = () => {
     this.filterLanguagesList('');
   }
 
-  stateChangeHandler = (child) => {
-    this.setState(oldState => ({
-      ...oldState,
-      [child.state.name]: child.state.value
-    }));
-    this.filterLanguagesList(child.state.name);
-  }
-
   filterLanguagesList = (name) => {
-    if(!name){
+    if (!name) {
       this.setLanguagesList('toLanguagesList', languages);
       this.setLanguagesList('fromLanguagesList', languages);
-    }if (name === 'fromLanguage') {
+    } if (name === 'fromLanguage') {
       let newList = languages.filter(element => element.key !== this.state.fromLanguage);
       this.setLanguagesList('toLanguagesList', newList);
-    } else if (name === 'toLanguage'){
+    } else if (name === 'toLanguage') {
       let newList = languages.filter(element => element.key !== this.state.toLanguage);
       this.setLanguagesList('fromLanguagesList', newList);
     }
-
-    // if (this.state.toLanguage) {
-    //   let newList = languages.filter(element => element.key !== this.state.toLanguage);
-    //   this.setLanguagesList('fromLanguagesList', newList);
-    // } else {
-    //   this.setLanguagesList('fromLanguagesList', languages);
-    // }
   }
 
   setLanguagesList = (name, newList) => {
@@ -69,35 +70,36 @@ class Documents extends React.Component {
     const { classes } = this.props;
     return (
       <form className={classes.form} autoComplete="off">
-        <Grid container className={classes.root} spacing={1}>
-          {/* <h1>This is document page</h1> */}
+        <Grid container className={classes.root} spacing={1} alignItems="center">
           <Grid item xs={12} sm={12} md={6}>
-            <UploadDropzone />
+            <UploadDropzone dropzoneChangeHandler={this.dropzoneChangeHandler} />
           </Grid>
           <Grid item xs={12} sm={12} md={3}>
             <Grid item xs={12}>
               <Selects
-                stateChangeHandler={this.stateChangeHandler}
+                selectChangeHandler={this.selectChangeHandler}
                 name={'fromLanguage'}
                 label={'From'}
                 id={'select-from-language'}
+                helperText={'Required'}
                 languages={this.state.fromLanguagesList}
               />
               <p>fromLanguage: {this.state.fromLanguage}</p>
             </Grid>
             <Grid item xs={12}>
               <Selects
-                stateChangeHandler={this.stateChangeHandler}
+                selectChangeHandler={this.selectChangeHandler}
                 name={'toLanguage'}
                 label={'To'}
                 id={'select-to-language'}
+                helperText={'Required'}
                 languages={this.state.toLanguagesList}
               />
               <p>toLanguage: {this.state.toLanguage}</p>
             </Grid>
           </Grid>
           <Grid item xs={12} sm={12} md={3}>
-            <p>placeholder</p>
+            <Button variant="contained" className={classes.button}>Translate</Button>
           </Grid>
         </Grid>
       </form>
