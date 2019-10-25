@@ -1,4 +1,5 @@
 {
   "domain": "msoegiarto.auth0.com",
-  "clientId": "oW34VmGOrCONlYHOadsHwYOSaeMo7LHc"
+  "clientId": "oW34VmGOrCONlYHOadsHwYOSaeMo7LHc",
+  "audience": "http://localhost"
 }

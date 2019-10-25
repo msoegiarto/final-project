@@ -15,11 +15,10 @@ const styles = theme => ({
   },
 });
 
-class Selects extends Component {
+class Select extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      name: this.props.name,
       value: ''
     };
 
@@ -60,8 +59,8 @@ class Selects extends Component {
   }
 }
 
-Selects.propTypes = {
+Select.propTypes = {
   classes: PropTypes.object.isRequired,
 };
 
-export default withStyles(styles, { withTheme: true })(Selects);
+export default withStyles(styles, { withTheme: true })(Select);
