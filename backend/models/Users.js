@@ -3,7 +3,7 @@ const Schema = mongoose.Schema;
 
 // Create Schema
 const UserSchema = new Schema({
-  name: {
+  email: {
     type: String,
     required: true
   },
@@ -11,11 +11,6 @@ const UserSchema = new Schema({
     type: String,
     required: true
   },
-  email: {
-    type: String,
-    required: true
-  },
-  // children
   user_files: [
     { type: Schema.Types.ObjectId, ref: 'Userfiles' }
   ]

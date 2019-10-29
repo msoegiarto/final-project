@@ -23,25 +23,39 @@ router.get('/', (req, res, next) => {
  */
 router.post('/', (req, res, next) => {
   const thisUser = {
-    name: req.body.name,
-    authentication: req.body.authentication,
-    email: req.body.email
+    email: req.body.email,
+    authentication: req.body.authentication
   };
-  selectUser(thisUser, (err, user) => {
+  selectUserAndPopulateFiles(thisUser, (err, user) => {
     if (err) return res.status(500).json({ err: err.message });
 
-    if (!user || user.length === 0) {
+    if (!user || !user.email || !user.authentication) {
+      console.log('user not found');
       saveUser(thisUser, (err, savedUser) => {
         if (err) return res.status(500).json({ err: err.message });
-        return res.status(200).json({ msg: `User saved`, email: savedUser.email });
+        console.log('save user');
+        return res.json({ msg: `User saved`, id: savedUser._id, email: savedUser.email });
       });
     } else {
+      console.log('user found', user);
       if (user.user_files && user.user_files.length > 0) {
-        populateUserFiles(user.user_files, (err, files) => {
-          if (err) return res.status(500).json({ err: err.message });
-          return res.status(200).json(files);
+        console.log('user has files');
+
+        const userFiles = [];
+        user.user_files.forEach(element => {
+          let newObj = {
+            id: element._id,
+            name: element.file_name,
+            fromLanguage: element.lang_from,
+            toLanguage: element.lang_to
+          }
+          userFiles.push(newObj);
         });
+
+        console.log(userFiles);
+        return res.status(200).json({ msg: `Files found`, translatedFiles: userFiles });
       } else {
+        console.log('user has no files');
         return res.status(200).json(user.user_files);
       }
     }
@@ -55,12 +69,11 @@ router.post('/', (req, res, next) => {
 router.post('/save', (req, res, next) => {
 
   const thisUser = {
-    name: req.body.name,
-    authentication: req.body.authentication,
-    email: req.body.email
+    email: req.body.email,
+    authentication: req.body.authentication
   };
 
-  const uploadedFile = req.files.file;
+  const uploadedFile = req.files.file; // file=what we define in react
   const thisFile = {
     data: uploadedFile.data,
     content_type: 'text/plain',
@@ -71,13 +84,27 @@ router.post('/save', (req, res, next) => {
 
   console.log(thisUser, thisFile);
 
-  saveFileWrapper(thisUser, thisFile, (err, updatedUser, file) => {
-    if (err) return res.status(500).json({ err: err.message });
-    console.log(updatedUser);
-    console.log(file);
-    res.status(200).json(updatedUser);
-  })
+  try {
+    saveFileWrapper(thisUser, thisFile, (user) => {
+      console.log('updatedUser', user);
 
+      const userFiles = [];
+      user.user_files.forEach(element => {
+        let newObj = {
+          id: element._id,
+          name: element.file_name,
+          fromLanguage: element.lang_from,
+          toLanguage: element.lang_to
+        }
+        userFiles.push(newObj);
+      });
+
+      console.log(userFiles);
+      return res.json({ translatedFiles: userFiles });
+    });
+  } catch (error) {
+    res.status(500).json({ err: err.message });
+  }
 });
 
 /**
@@ -89,9 +116,6 @@ router.post('/test/:from/:to', (req, res, next) => {
     return res.status(400).json({ msg: `No file uploaded` });
   }
 
-  const name = req.body.name;
-  const authorization = req.body.authorization;
-  const email = req.body.email;
   const fromLanguage = req.params.from;
   const toLanguage = req.params.to;
   console.log(fromLanguage, toLanguage);
@@ -102,8 +126,8 @@ router.post('/test/:from/:to', (req, res, next) => {
 });
 
 /**
- * @POST /api/translate/documents
- * 
+ * @POST /api/translate/documents/:from/:to
+ * @deprecated This route is no longer used, but I'm keeping it for future reference
  */
 router.post('/:from/:to', (req, res, next) => {
   if (req.files === null) {
@@ -128,43 +152,48 @@ router.post('/:from/:to', (req, res, next) => {
   res.json({ msg: `POST /api/translate/documents`, fileName: uploadedFile.name, filePath: `/uploads/${uploadedFile.name}` });
 });
 
-const selectUser = (inputUser, callback) => {
-  Users.findOne(inputUser, (error, user) => callback(error, user));
-}
-
-const populateUserFiles = (user_files, callback) => {
-  console.log(user_files);
-  Userfiles.find({
-    '_id': { $in: user_files }
-  }, (err, docs) => {
-    console.log(docs);
-    callback(err, docs);
-  });
+const selectUserAndPopulateFiles = (inputUser, callback) => {
+  Users.findOne(inputUser)
+    .populate('user_files', '_id file_name lang_from lang_to')
+    .exec((error, user) => callback(error, user));
 }
 
 const saveUser = (inputUser, callback) => {
   const newUser = new Users(inputUser);
+
   newUser.save({}, (error, user) => callback(error, user));
 }
 
-const saveFile = (inputFile, callback) => {
-  const newFile = new Userfiles(inputFile);
+const saveFile = (inputFile, userId, callback) => {
+  const newFile = new Userfiles({
+    data: inputFile.data,
+    content_type: inputFile.content_type,
+    file_name: inputFile.file_name,
+    lang_from: inputFile.lang_from,
+    lang_to: inputFile.lang_to,
+    file_owner: userId
+  });
+
   newFile.save({}, (error, file) => callback(error, file))
 }
 
 const saveFileWrapper = (inputUser, inputFile, callback) => {
-  const newFile = new Userfiles(inputFile);
-  saveFile(newFile, (error, file) => {
-    if (error) throw error;
 
-    console.log('savedFileId:', file._id);
-    Users.findOne(inputUser, (error, user) => {
+  selectUserAndPopulateFiles(inputUser, (error, user) => {
+    if (error) throw error;
+    if (!user || !user.email || !user.authentication) throw new Error('user not found');
+
+    saveFile(inputFile, user._id, (error, file) => {
       if (error) throw error;
 
-      user.user_files.push(file._id);
-      Users.updateOne(user, (error, updatedUser) => callback(error, updatedUser, file));
+      user.user_files.push(file);
+
+      user.save({}, (error, user) => {
+        if (error) throw error;
+        callback(user);
+      });
     });
-  })
+  });
 
 }
 

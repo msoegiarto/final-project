@@ -36,6 +36,10 @@ const UserfilesSchema = new Schema({
   expiry_date: {
     type: Date,
     defualt: () => Date.now() + 30 * 24 * 60 * 60 * 1000
+  },
+  file_owner: {
+    type: Schema.Types.ObjectId,
+    ref: 'Users'
   }
 });
 
