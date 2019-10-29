@@ -59,8 +59,8 @@ class TranslatedFile extends React.Component {
   }
 
   componentDidMount = () => {
-    const fromLanguage = languages.find(element => element.key === this.props.file.from).value || '';
-    const toLanguage = languages.find(element => element.key === this.props.file.to).value || '';
+    const fromLanguage = languages.find(element => element.key === this.props.file.fromLanguage).value || '';
+    const toLanguage = languages.find(element => element.key === this.props.file.toLanguage).value || '';
 
     this.setState({ fromLanguage, toLanguage });
   }

@@ -54,13 +54,13 @@ const styles = theme => ({
   }
 });
 
-const getConfig = async context => {
+const getConfig = async (context, contentType) => {
   const { getTokenSilently } = context;
   let accessToken = await getTokenSilently();
 
   return {
     headers: {
-      'Content-Type': `multipart/form-data`,
+      'Content-Type': contentType,
       'Authorization': `Bearer ${accessToken}`
     }
   };
@@ -74,15 +74,6 @@ const getUser = context => {
     authentication: user.sub,
     email: user.email
   };
-}
-
-const getUserFiles = async (config, user, callback) => {
-  try {
-    const res = await axios.post(`/api/translate/documents/`, user, config);
-    callback(res.data);
-  } catch (err) {
-    console.error(err)
-  }
 }
 
 class Documents extends React.Component {
@@ -107,25 +98,33 @@ class Documents extends React.Component {
     this.filterLanguagesList('');
 
     // dummy file
-    const theFiles = [
-      { id: '123456780', name: 'fileeeeeeeee.txt', from: 'en', to: 'es' },
-      // { id: '123456781', name: 'anotherFileeeeeeeeee.txt', from: 'en', to: 'fr' },
-      { id: '123456782', name: 'yetAnotherFileeeeeeeeeeeee.txt', from: 'en', to: 'de' },
-    ];
+    // const theFiles = [
+    //   { id: '123456780', name: 'fileeeeeeeee.txt', fromLanguage: 'en', toLanguage: 'es' },
+    //   { id: '123456781', name: 'anotherFileeeeeeeeee.txt', fromLanguage: 'en', toLanguage: 'fr' },
+    //   { id: '123456782', name: 'yetAnotherFileeeeeeeeeeeee.txt', fromLanguage: 'en', toLanguage: 'de' },
+    // ];
 
-    this.setState(prevState => ({
-      ...prevState,
-      translatedFiles: theFiles
-    }));
+    // this.setState(prevState => ({
+    //   ...prevState,
+    //   translatedFiles: theFiles
+    // }));
 
-    // const config = await getConfig(this.context);
-    // const user = getUser(this.context);
-    // await getUserFiles(config, user, theFiles => {
-    //   this.setState(prevState => ({
-    //     ...prevState,
-    //     translatedFiles: theFiles
-    //   }));
-    // });
+    const config = await getConfig(this.context, 'application/json');
+    const user = getUser(this.context);
+
+    try {
+      const res = await axios.post(`/api/translate/documents/`, user, config);
+
+      console.log('#####', res.data);
+      if (res.data.translatedFiles) {
+        this.setState(prevState => ({
+          ...prevState,
+          translatedFiles: res.data.translatedFiles
+        }));
+      }
+    } catch (err) {
+      console.error(err)
+    }
 
   }
 
@@ -165,56 +164,53 @@ class Documents extends React.Component {
   }
 
   test = async () => {
-    const { getTokenSilently, user } = this.context;
-    // const accessToken = await getTokenSilently();
-    console.log(user);
-    console.log('name:', user.name);
-    console.log('authentication:', user.sub);
-    console.log('email:', user.email);
-    // try {
-    //   const res = await axios.get(`/api/translate/documents`, {
-    //     headers: {
-    //       Authorization: `Bearer ${accessToken}`
-    //     }
-    //   })
-    //   console.log(res);
-    // } catch (error) {
-    //   console.error(error);
-    // }
+    const { getTokenSilently } = this.context;
+    const accessToken = await getTokenSilently();
+
+    try {
+      const res = await axios.get(`/api/translate/documents`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      })
+      console.log(res);
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   onClickTranslate = async (event) => {
     event.preventDefault();
 
-    const config = await getConfig(this.context);
+    const config = await getConfig(this.context, 'multipart/form-data');
     const user = getUser(this.context);
 
     const formData = new FormData();
     formData.append('name', user.name);
-    formData.append('authentication', user.sub);
+    formData.append('authentication', user.authentication);
     formData.append('email', user.email);
+    formData.append('fromLanguage', this.state.fromLanguage);
+    formData.append('toLanguage', this.state.toLanguage);
     this.state.files.forEach(element => {
       formData.append('file', element, element.name);
     });
 
     try {
-      const res = await axios.post(`/api/translate/documents/${this.state.fromLanguage}/${this.state.toLanguage}`, formData, config);
+      const res = await axios.post(`/api/translate/documents/save`, formData, config);
       console.log('@@@@@', res.data);
-      this.updateTranslatedFiles(res.data);
+
+      this.setState(prevState => ({
+        ...prevState,
+        fromLanguage: null,
+        toLanguage: null,
+        isSuccess: true,
+        translatedFiles: res.data.translatedFiles
+      }));
 
     } catch (err) {
       console.error(err)
     }
 
-  }
-
-  updateTranslatedFiles = data => {
-    this.setState(prevState => ({
-      ...prevState,
-      fromLanguage: null,
-      toLanguage: null,
-      isSuccess: true
-    }));
   }
 
   render() {

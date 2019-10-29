@@ -15,8 +15,8 @@ function App() {
         <AppNavbar />
         <Switch>
           <Route exact path="/" component={Home} />
-          {/* bypass authentication while still developing */}
           <PrivateRoute path="/documents" component={Documents} />
+          {/* bypass authentication while still developing */}
           {/* <Route path="/documents" component={Documents} /> */}
           <Route component={NotFound} />
         </Switch>
