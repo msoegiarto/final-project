@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Fragment } from 'react';
 import { Auth0Context } from "../auth0/react-auth0-wrapper";
 import axios from 'axios';
 import PropTypes from "prop-types";
@@ -12,6 +12,7 @@ import DeleteOutlinedIcon from '@material-ui/icons/DeleteOutlined';
 import CloudDownloadOutlinedIcon from '@material-ui/icons/CloudDownloadOutlined';
 import Select from './Select';
 import TranslatedFile from './TranslatedFile';
+import Message from './Message';
 import languages from './lang_config.json';
 
 const styles = theme => ({
@@ -25,10 +26,14 @@ const styles = theme => ({
   sendBtn: {
     width: 200,
     color: '#6200ea',
+    [theme.breakpoints.down('sm')]: {
+      margin: '2vh 0',
+    },
   },
   lowerSide: {
     display: 'flex',
     flexGrow: 1,
+    marginTop: '10vh',
   },
   deleteBtn: {
     flexDirection: 'column',
@@ -42,7 +47,43 @@ const styles = theme => ({
     color: '#11cb5f',
     width: '100%',
   },
+  container: {
+    [theme.breakpoints.up('md')]: {
+      margin: '0 20vw',
+    },
+  }
 });
+
+const getConfig = async context => {
+  const { getTokenSilently } = context;
+  let accessToken = await getTokenSilently();
+
+  return {
+    headers: {
+      'Content-Type': `multipart/form-data`,
+      'Authorization': `Bearer ${accessToken}`
+    }
+  };
+}
+
+const getUser = context => {
+  const { user } = context;
+
+  return {
+    name: user.name,
+    authentication: user.sub,
+    email: user.email
+  };
+}
+
+const getUserFiles = async (config, user, callback) => {
+  try {
+    const res = await axios.post(`/api/translate/documents/`, user, config);
+    callback(res.data);
+  } catch (err) {
+    console.error(err)
+  }
+}
 
 class Documents extends React.Component {
 
@@ -51,29 +92,41 @@ class Documents extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      limit: 3,
       files: null,
-      fromLanguage: '',
-      toLanguage: '',
+      fromLanguage: null,
+      toLanguage: null,
       fromLanguagesList: [],
       toLanguagesList: [],
-      translatedFiles: []
+      translatedFiles: [],
+      isSuccess: false,
     }
   }
 
-  componentDidMount = () => {
+  componentDidMount = async () => {
     this.filterLanguagesList('');
 
     // dummy file
     const theFiles = [
-      { id: '123456780', name: 'file.txt', from: 'en', to: 'es' },
-      { id: '123456781', name: 'anotherFile.txt', from: 'en', to: 'fr' },
-      // { id: '123456782', name: 'yetAnotherFile.txt', from: 'en', to: 'de' },
+      { id: '123456780', name: 'fileeeeeeeee.txt', from: 'en', to: 'es' },
+      // { id: '123456781', name: 'anotherFileeeeeeeeee.txt', from: 'en', to: 'fr' },
+      { id: '123456782', name: 'yetAnotherFileeeeeeeeeeeee.txt', from: 'en', to: 'de' },
     ];
 
     this.setState(prevState => ({
       ...prevState,
       translatedFiles: theFiles
     }));
+
+    // const config = await getConfig(this.context);
+    // const user = getUser(this.context);
+    // await getUserFiles(config, user, theFiles => {
+    //   this.setState(prevState => ({
+    //     ...prevState,
+    //     translatedFiles: theFiles
+    //   }));
+    // });
+
   }
 
   selectChangeHandler = (child) => {
@@ -112,37 +165,37 @@ class Documents extends React.Component {
   }
 
   test = async () => {
-    const { getTokenSilently } = this.context;
-    const accessToken = await getTokenSilently();
-    console.log(accessToken);
-    try {
-      const res = await axios.get(`/api/translate/documents`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`
-        }
-      })
-      console.log(res);
-    } catch (error) {
-      console.error(error);
-    }
+    const { getTokenSilently, user } = this.context;
+    // const accessToken = await getTokenSilently();
+    console.log(user);
+    console.log('name:', user.name);
+    console.log('authentication:', user.sub);
+    console.log('email:', user.email);
+    // try {
+    //   const res = await axios.get(`/api/translate/documents`, {
+    //     headers: {
+    //       Authorization: `Bearer ${accessToken}`
+    //     }
+    //   })
+    //   console.log(res);
+    // } catch (error) {
+    //   console.error(error);
+    // }
   }
 
   onClickTranslate = async (event) => {
     event.preventDefault();
-    const { getTokenSilently } = this.context;
-    const accessToken = await getTokenSilently();
+
+    const config = await getConfig(this.context);
+    const user = getUser(this.context);
 
     const formData = new FormData();
+    formData.append('name', user.name);
+    formData.append('authentication', user.sub);
+    formData.append('email', user.email);
     this.state.files.forEach(element => {
-      formData.append('file', element);
+      formData.append('file', element, element.name);
     });
-
-    const config = {
-      headers: {
-        'Content-Type': `multipart/form-data`,
-        'Authorization': `Bearer ${accessToken}`
-      }
-    };
 
     try {
       const res = await axios.post(`/api/translate/documents/${this.state.fromLanguage}/${this.state.toLanguage}`, formData, config);
@@ -152,66 +205,103 @@ class Documents extends React.Component {
     } catch (err) {
       console.error(err)
     }
+
   }
 
   updateTranslatedFiles = data => {
-
+    this.setState(prevState => ({
+      ...prevState,
+      fromLanguage: null,
+      toLanguage: null,
+      isSuccess: true
+    }));
   }
 
   render() {
     const { classes } = this.props;
+
     return (
-      <div>
-        <form className={classes.form} autoComplete="off" onSubmit={this.onClickTranslate}>
-          <Grid container className={classes.upperSide} spacing={1} alignItems="center">
-            <Grid item xs={12} sm={12} md={6}>
-              <UploadDropzone dropzoneChangeHandler={this.dropzoneChangeHandler} />
-            </Grid>
-            <Grid item xs={12} sm={12} md={3}>
-              <Grid item xs={12}>
-                <Select
-                  selectChangeHandler={this.selectChangeHandler}
-                  name={'fromLanguage'}
-                  label={'From'}
-                  id={'select-from-language'}
-                  helperText={'Required'}
-                  languages={this.state.fromLanguagesList}
-                />
+      <div className={classes.container}>
+        <Fragment>
+          {
+            this.state.translatedFiles.length === this.state.limit &&
+            <Message text={'You have reached the maximum of 3 saved files.'} cStyle={'warning'} />
+          }
+        </Fragment>
+        <Fragment>
+          {
+            this.state.isSuccess &&
+            <Message text={'Your file is ready.'} cStyle={'success'} />
+          }
+        </Fragment>
+        <Fragment>
+          <form className={classes.form} autoComplete="off" onSubmit={this.onClickTranslate}>
+            {
+              this.state.translatedFiles.length < this.state.limit &&
+
+              <Grid container className={classes.upperSide} spacing={1} alignItems="center">
+                <Grid item xs={12}>
+                  <UploadDropzone dropzoneChangeHandler={this.dropzoneChangeHandler} />
+                </Grid>
+                {
+                  this.state.files && this.state.files.length > 0 &&
+                  <Grid item xs={12} sm={4}>
+                    <Select
+                      selectChangeHandler={this.selectChangeHandler}
+                      name={'fromLanguage'}
+                      label={'From'}
+                      id={'select-from-language'}
+                      helperText={'Required'}
+                      languages={this.state.fromLanguagesList}
+                    />
+                  </Grid>
+                }
+                {
+                  this.state.files && this.state.files.length > 0 &&
+                  <Grid item xs={12} sm={4}>
+                    <Select
+                      selectChangeHandler={this.selectChangeHandler}
+                      name={'toLanguage'}
+                      label={'To'}
+                      id={'select-to-language'}
+                      helperText={'Required'}
+                      languages={this.state.toLanguagesList}
+                    />
+                  </Grid>
+                }
+                {
+                  this.state.files && this.state.files.length > 0 && this.state.fromLanguage && this.state.toLanguage &&
+                  <Grid item xs={12} sm={4}>
+                    <Button type="submit" variant="outlined" size="large" className={classes.sendBtn} startIcon={<SendOutlinedIcon color="inherit" />} disabled={this.state.translatedFiles.length === 3}>Translate</Button>
+                  </Grid>
+                }
               </Grid>
-              <Grid item xs={12}>
-                <Select
-                  selectChangeHandler={this.selectChangeHandler}
-                  name={'toLanguage'}
-                  label={'To'}
-                  id={'select-to-language'}
-                  helperText={'Required'}
-                  languages={this.state.toLanguagesList}
-                />
+            }
+            <Button variant="contained" className={classes.button} onClick={this.test}>Test</Button>
+          </form>
+        </Fragment>
+        <Fragment>
+          <Grid container className={classes.lowerSide}>
+            {
+              this.state.translatedFiles.length > 0 &&
+              this.state.translatedFiles.map((element, index) => (
+                <TranslatedFile key={index} file={element} />
+              ))
+
+            }
+          </Grid>
+          {
+            this.state.translatedFiles.length > 1 &&
+            <Grid container spacing={1} justify="center">
+              <Grid item xs={12} md={6}>
+                <ButtonGroup fullWidth aria-label="full width outlined button group">
+                  <Button variant="contained" size="medium" className={classes.deleteBtn} startIcon={<DeleteOutlinedIcon color="inherit" />}>Delete All</Button>
+                  <Button variant="contained" size="medium" className={classes.downloadBtn} startIcon={<CloudDownloadOutlinedIcon color="inherit" />}>Download All</Button>
+                </ButtonGroup>
               </Grid>
             </Grid>
-            <Grid item xs={12} sm={12} md={3}>
-              <Button type="submit" variant="outlined" size="large" className={classes.sendBtn} startIcon={<SendOutlinedIcon color="inherit" />} disabled={this.state.translatedFiles.length === 3}>Translate</Button>
-              {/* <Button variant="contained" className={classes.button} onClick={this.test}>Test</Button> */}
-            </Grid>
-          </Grid>
-        </form>
-        {
-          this.state.translatedFiles.length > 0 &&
-          <Grid container className={classes.lowerSide} spacing={1} justify="flex-end">
-            <Grid item xs={12} md={6}>
-              <ButtonGroup fullWidth aria-label="full width outlined button group">
-                <Button variant="contained" size="medium" className={classes.deleteBtn} startIcon={<DeleteOutlinedIcon color="inherit" />}>Delete All</Button>
-                <Button variant="contained" size="medium" className={classes.downloadBtn} startIcon={<CloudDownloadOutlinedIcon color="inherit" />}>Download All</Button>
-              </ButtonGroup>
-            </Grid>
-          </Grid>
-        }
-        {
-          this.state.translatedFiles.length > 0 &&
-          this.state.translatedFiles.map((element, index) => (
-            <TranslatedFile key={index} file={element} />
-          ))
-        }
+          }
+        </Fragment>
       </div >
     );
   }

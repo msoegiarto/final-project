@@ -20,7 +20,7 @@ class UploadDropzone extends Component {
       <DropzoneArea
         acceptedFiles={['text/plain']}
         filesLimit={1}
-        maxFileSize={5000000}
+        maxFileSize={10000}
         showFileNames={true}
         dropzoneText={'Drag and drop a text file here or click'}
         onChange={this.handleChange.bind(this)}

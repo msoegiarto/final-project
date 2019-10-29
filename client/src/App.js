@@ -8,7 +8,7 @@ import NotFound from './components/NotFound';
 
 import './App.css';
 
-function App() { 
+function App() {
   return (
     <div className="App">
       <BrowserRouter>
@@ -16,8 +16,8 @@ function App() {
         <Switch>
           <Route exact path="/" component={Home} />
           {/* bypass authentication while still developing */}
-          {/* <PrivateRoute path="/documents" component={Documents} /> */}
-          <Route path="/documents" component={Documents}/>
+          <PrivateRoute path="/documents" component={Documents} />
+          {/* <Route path="/documents" component={Documents} /> */}
           <Route component={NotFound} />
         </Switch>
       </BrowserRouter>

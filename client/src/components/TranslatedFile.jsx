@@ -17,24 +17,24 @@ const styles = theme => ({
     display: 'flex',
     flexWrap: 'wrap',
     backgroundColor: '#fafafa',
-    // justifyContent: 'flex-end',
+    justifyContent: 'flex-end',
   },
   filename: {
     display: 'flex',
-    flexDirection: 'column',
-    flexGrow: 1,
+    minWidth: '100%'
   },
   details: {
     display: 'flex',
-    flexDirection: 'column',
+    justifyContent: 'flex-end',
   },
   content: {
     minWidth: 250,
     flex: '1 0 auto',
-    
   },
   text: {
     textAlign: 'left',
+    padding: '1rem 0',
+    color: '#01579b'
   },
   deleteBtn: {
     margin: theme.spacing(1),
