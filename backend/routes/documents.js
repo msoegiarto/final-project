@@ -26,7 +26,7 @@ router.post('/', (req, res, next) => {
     email: req.body.email,
     authentication: req.body.authentication
   };
-  selectUserAndPopulateFiles(thisUser, (err, user) => {
+  findUserAndPopulateFiles(thisUser, (err, user) => {
     if (err) return res.status(500).json({ err: err.message });
 
     if (!user || !user.email || !user.authentication) {
@@ -52,7 +52,7 @@ router.post('/', (req, res, next) => {
           userFiles.push(newObj);
         });
 
-        console.log(userFiles);
+        // console.log(userFiles);
         return res.status(200).json({ msg: `Files found`, translatedFiles: userFiles });
       } else {
         console.log('user has no files');
@@ -82,12 +82,8 @@ router.post('/save', (req, res, next) => {
     lang_to: req.body.toLanguage
   };
 
-  console.log(thisUser, thisFile);
-
   try {
     saveFileWrapper(thisUser, thisFile, (user) => {
-      console.log('updatedUser', user);
-
       const userFiles = [];
       user.user_files.forEach(element => {
         let newObj = {
@@ -99,60 +95,73 @@ router.post('/save', (req, res, next) => {
         userFiles.push(newObj);
       });
 
-      console.log(userFiles);
       return res.json({ translatedFiles: userFiles });
     });
-  } catch (error) {
+  } catch (err) {
     res.status(500).json({ err: err.message });
   }
 });
 
 /**
- * @POST /api/translate/test
+ * @DELETE /api/translate/documents/delete
  * 
  */
-router.post('/test/:from/:to', (req, res, next) => {
-  if (req.files === null) {
-    return res.status(400).json({ msg: `No file uploaded` });
+router.delete('/delete', (req, res, next) => {
+  const deletedIds = req.body.translatedFiles;
+  if (!deletedIds || deletedIds.length === 0) return res.status(400).json({ err: 'no ids to be deleted' });
+
+  try {
+    deleteFiles(deletedIds, () => {
+      const thisUser = {
+        email: req.body.email,
+        authentication: req.body.authentication
+      };
+      findUserAndPopulateFiles(thisUser, (error, user) => {
+        if (error) throw error;
+        const userFiles = [];
+        user.user_files.forEach(element => {
+          let newObj = {
+            id: element._id,
+            name: element.file_name,
+            fromLanguage: element.lang_from,
+            toLanguage: element.lang_to
+          }
+          userFiles.push(newObj);
+        });
+        return res.json({ msg: 'files deleted', translatedFiles: userFiles });
+      });
+    });
+  } catch (err) {
+    res.status(500).json({ err: err.message });
   }
-
-  const fromLanguage = req.params.from;
-  const toLanguage = req.params.to;
-  console.log(fromLanguage, toLanguage);
-
-  const uploadedFile = req.files.file; // file=what we define in react
-  console.log('uploadedFile:', uploadedFile);
-
 });
 
-/**
- * @POST /api/translate/documents/:from/:to
- * @deprecated This route is no longer used, but I'm keeping it for future reference
- */
-router.post('/:from/:to', (req, res, next) => {
-  if (req.files === null) {
-    return res.status(400).json({ msg: `No file uploaded` });
-  }
+const deleteFiles = (deletedIds, callback) => {
 
-  const fromLanguage = req.params.from;
-  const toLanguage = req.params.to;
-  console.log(fromLanguage, toLanguage);
+  (deletedIds.forEach(element => {
+    console.log('deleteId:', element.id);
 
-  const uploadedFile = req.files.file; // file=what we define in react
-  console.log('uploadedFile:', uploadedFile);
+    Userfiles.findById(element.id).exec((err, userFiles) => {
+      if (err) throw err;
 
-  const dir = path.join(__dirname, `../../client/public/uploads/${uploadedFile.name}`);
-  uploadedFile.mv(dir, err => {
-    if (err) {
-      console.error(err);
-      return res.status(500).send(err);
-    }
-  });
+      userFiles.remove(error => {
+        if (error) throw error;
 
-  res.json({ msg: `POST /api/translate/documents`, fileName: uploadedFile.name, filePath: `/uploads/${uploadedFile.name}` });
-});
+        Users.updateOne(
+          { _id: userFiles.file_owner },
+          { $pull: { user_files: userFiles._id } },
+          // { multi: true } //if reference exists in multiple documents 
+        )
+          .exec();
+      });
+    });
+  }), () => {
+    callback();
+  })();
 
-const selectUserAndPopulateFiles = (inputUser, callback) => {
+}
+
+const findUserAndPopulateFiles = (inputUser, callback) => {
   Users.findOne(inputUser)
     .populate('user_files', '_id file_name lang_from lang_to')
     .exec((error, user) => callback(error, user));
@@ -179,7 +188,7 @@ const saveFile = (inputFile, userId, callback) => {
 
 const saveFileWrapper = (inputUser, inputFile, callback) => {
 
-  selectUserAndPopulateFiles(inputUser, (error, user) => {
+  findUserAndPopulateFiles(inputUser, (error, user) => {
     if (error) throw error;
     if (!user || !user.email || !user.authentication) throw new Error('user not found');
 
@@ -206,5 +215,31 @@ const getNewName = (oldName, toLang) => {
   }
   return name.join('.');
 }
+
+/**
+ * @POST /api/translate/documents/:from/:to
+ * @deprecated This route is no longer used, but I'm keeping it for future reference
+ */
+router.post('/:from/:to', (req, res, next) => {
+  if (req.files === null) {
+    return res.status(400).json({ msg: `No file uploaded` });
+  }
+
+  const fromLanguage = req.params.from;
+  const toLanguage = req.params.to;
+  console.log(fromLanguage, toLanguage);
+
+  const uploadedFile = req.files.file; // file=what we define in react
+
+  const dir = path.join(__dirname, `../../client/public/uploads/${uploadedFile.name}`);
+  uploadedFile.mv(dir, err => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send(err);
+    }
+  });
+
+  res.json({ msg: `POST /api/translate/documents`, fileName: uploadedFile.name, filePath: `/uploads/${uploadedFile.name}` });
+});
 
 module.exports = router;
