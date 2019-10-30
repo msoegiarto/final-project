@@ -70,9 +70,8 @@ const getUser = context => {
   const { user } = context;
 
   return {
-    name: user.name,
-    authentication: user.sub,
-    email: user.email
+    email: user.email,
+    authentication: user.sub
   };
 }
 
@@ -85,8 +84,8 @@ class Documents extends React.Component {
     this.state = {
       limit: 3,
       files: null,
-      fromLanguage: null,
-      toLanguage: null,
+      fromLanguage: '',
+      toLanguage: '',
       fromLanguagesList: [],
       toLanguagesList: [],
       translatedFiles: [],
@@ -96,18 +95,6 @@ class Documents extends React.Component {
 
   componentDidMount = async () => {
     this.filterLanguagesList('');
-
-    // dummy file
-    // const theFiles = [
-    //   { id: '123456780', name: 'fileeeeeeeee.txt', fromLanguage: 'en', toLanguage: 'es' },
-    //   { id: '123456781', name: 'anotherFileeeeeeeeee.txt', fromLanguage: 'en', toLanguage: 'fr' },
-    //   { id: '123456782', name: 'yetAnotherFileeeeeeeeeeeee.txt', fromLanguage: 'en', toLanguage: 'de' },
-    // ];
-
-    // this.setState(prevState => ({
-    //   ...prevState,
-    //   translatedFiles: theFiles
-    // }));
 
     const config = await getConfig(this.context, 'application/json');
     const user = getUser(this.context);
@@ -131,6 +118,7 @@ class Documents extends React.Component {
   selectChangeHandler = (child) => {
     this.setState(oldState => ({
       ...oldState,
+      isSuccess: false,
       [child.props.name]: child.state.value
     }), () => this.filterLanguagesList(child.props.name));
 
@@ -139,6 +127,7 @@ class Documents extends React.Component {
   dropzoneChangeHandler = (child) => {
     this.setState(oldState => ({
       ...oldState,
+      isSuccess: false,
       files: child.state.files
     }));
   }
@@ -163,24 +152,12 @@ class Documents extends React.Component {
     }));
   }
 
-  test = async () => {
-    const { getTokenSilently } = this.context;
-    const accessToken = await getTokenSilently();
-
-    try {
-      const res = await axios.get(`/api/translate/documents`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`
-        }
-      })
-      console.log(res);
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
   onClickTranslate = async (event) => {
     event.preventDefault();
+    this.setState(oldState => ({
+      ...oldState,
+      isSuccess: false,
+    }));
 
     const config = await getConfig(this.context, 'multipart/form-data');
     const user = getUser(this.context);
@@ -197,20 +174,60 @@ class Documents extends React.Component {
 
     try {
       const res = await axios.post(`/api/translate/documents/save`, formData, config);
-      console.log('@@@@@', res.data);
+      console.log('onClickTranslate', res.data);
 
       this.setState(prevState => ({
         ...prevState,
-        fromLanguage: null,
-        toLanguage: null,
+        fromLanguage: '',
+        toLanguage: '',
         isSuccess: true,
+        fromLanguagesList: languages,
+        toLanguagesList: languages,
         translatedFiles: res.data.translatedFiles
       }));
 
     } catch (err) {
       console.error(err)
     }
+  }
 
+  onClickDelete = async (id) => {
+    console.log(id);
+    const config = await getConfig(this.context, 'application/json');
+    const user = getUser(this.context);
+
+    const data = {
+      email: user.email,
+      authentication: user.authentication,
+    };
+
+    if (id === 'ALL') {
+      const translatedFileIds = [];
+      this.state.translatedFiles.forEach(element => {
+        translatedFileIds.push({ id: element.id });
+      });
+
+      data.translatedFiles = translatedFileIds;
+    } else {
+      data.translatedFiles = [{ id: id }];
+    }
+
+    await axios.delete(`/api/translate/documents/delete`, { data: data, header: config })
+      .then(res => {
+        this.setState(prevState => ({
+          ...prevState,
+          isSuccess: false,
+          translatedFiles: res.data.translatedFiles
+        }));
+        console.log(res.data.msg);
+      })
+      .catch(error => {
+        console.error(error)
+      });
+  }
+
+  onClickDeleteAll = () => {
+    this.onClickDelete('ALL');
   }
 
   render() {
@@ -227,7 +244,7 @@ class Documents extends React.Component {
         <Fragment>
           {
             this.state.isSuccess &&
-            <Message text={'Your file is ready.'} cStyle={'success'} />
+            <Message text={'Success.'} cStyle={'success'} />
           }
         </Fragment>
         <Fragment>
@@ -249,6 +266,7 @@ class Documents extends React.Component {
                       id={'select-from-language'}
                       helperText={'Required'}
                       languages={this.state.fromLanguagesList}
+                      value={this.state.fromLanguage}
                     />
                   </Grid>
                 }
@@ -262,6 +280,7 @@ class Documents extends React.Component {
                       id={'select-to-language'}
                       helperText={'Required'}
                       languages={this.state.toLanguagesList}
+                      value={this.state.toLanguage}
                     />
                   </Grid>
                 }
@@ -273,7 +292,6 @@ class Documents extends React.Component {
                 }
               </Grid>
             }
-            <Button variant="contained" className={classes.button} onClick={this.test}>Test</Button>
           </form>
         </Fragment>
         <Fragment>
@@ -281,7 +299,7 @@ class Documents extends React.Component {
             {
               this.state.translatedFiles.length > 0 &&
               this.state.translatedFiles.map((element, index) => (
-                <TranslatedFile key={index} file={element} />
+                <TranslatedFile key={index} file={element} onClickDelete={this.onClickDelete} />
               ))
 
             }
@@ -291,7 +309,7 @@ class Documents extends React.Component {
             <Grid container spacing={1} justify="center">
               <Grid item xs={12} md={6}>
                 <ButtonGroup fullWidth aria-label="full width outlined button group">
-                  <Button variant="contained" size="medium" className={classes.deleteBtn} startIcon={<DeleteOutlinedIcon color="inherit" />}>Delete All</Button>
+                  <Button variant="contained" size="medium" className={classes.deleteBtn} startIcon={<DeleteOutlinedIcon color="inherit" />} onClick={this.onClickDeleteAll}>Delete All</Button>
                   <Button variant="contained" size="medium" className={classes.downloadBtn} startIcon={<CloudDownloadOutlinedIcon color="inherit" />}>Download All</Button>
                 </ButtonGroup>
               </Grid>

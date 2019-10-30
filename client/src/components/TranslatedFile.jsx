@@ -65,6 +65,10 @@ class TranslatedFile extends React.Component {
     this.setState({ fromLanguage, toLanguage });
   }
 
+  onClickDelete = () => {
+    this.props.onClickDelete(this.props.file.id);
+  }
+
   render() {
     const { classes } = this.props;
     return (
@@ -81,7 +85,7 @@ class TranslatedFile extends React.Component {
         </div>
         <div className={classes.details}>
           <CardActions>
-            <Button variant="outlined" size="medium" className={classes.deleteBtn} startIcon={<DeleteOutlinedIcon color="inherit" />}>
+            <Button variant="outlined" size="medium" className={classes.deleteBtn} startIcon={<DeleteOutlinedIcon color="inherit" />} onClick={this.onClickDelete}>
               Delete
               </Button>
           </CardActions>

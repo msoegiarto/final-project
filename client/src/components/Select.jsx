@@ -16,13 +16,6 @@ const styles = theme => ({
 });
 
 class Select extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      value: ''
-    };
-
-  }
 
   handleChange = event => {
     this.setState({ value: event.target.value },
@@ -41,7 +34,7 @@ class Select extends Component {
         label={this.props.label}
         name={this.props.name}
         className={classes.textField}
-        value={this.state.value}
+        value={this.props.value}
         onChange={this.handleChange}
         SelectProps={{
           MenuProps: {
