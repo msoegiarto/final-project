@@ -22,44 +22,46 @@ router.get('/', (req, res, next) => {
  * 
  */
 router.post('/', (req, res, next) => {
-  const thisUser = {
-    email: req.body.email,
-    authentication: req.body.authentication
-  };
-  findUserAndPopulateFiles(thisUser, (err, user) => {
-    if (err) return res.status(500).json({ err: err.message });
+  const thisUser = getUserFromRequest(req);
 
-    if (!user || !user.email || !user.authentication) {
-      console.log('user not found');
-      saveUser(thisUser, (err, savedUser) => {
-        if (err) return res.status(500).json({ err: err.message });
-        console.log('save user');
-        return res.json({ msg: `User saved`, id: savedUser._id, email: savedUser.email });
-      });
-    } else {
-      console.log('user found', user);
-      if (user.user_files && user.user_files.length > 0) {
-        console.log('user has files');
+  try {
+    findUserAndPopulateFiles(thisUser, (err, user) => {
+      if (err) throw err;
 
-        const userFiles = [];
-        user.user_files.forEach(element => {
-          let newObj = {
-            id: element._id,
-            name: element.file_name,
-            fromLanguage: element.lang_from,
-            toLanguage: element.lang_to
-          }
-          userFiles.push(newObj);
+      if (!user || !user.email || !user.authentication) {
+        console.log('user not found');
+        saveUser(thisUser, (err, savedUser) => {
+          if (err) throw err;
+          console.log('save user');
+          return res.json({ msg: `User saved`, id: savedUser._id, email: savedUser.email, translatedFiles: [] });
         });
-
-        // console.log(userFiles);
-        return res.status(200).json({ msg: `Files found`, translatedFiles: userFiles });
       } else {
-        console.log('user has no files');
-        return res.status(200).json(user.user_files);
+        console.log('user found', user);
+        if (user.user_files && user.user_files.length > 0) {
+          console.log('user has files');
+
+          const userFiles = [];
+          user.user_files.forEach(element => {
+            let newObj = {
+              id: element._id,
+              name: element.file_name,
+              fromLanguage: element.lang_from,
+              toLanguage: element.lang_to
+            }
+            userFiles.push(newObj);
+          });
+
+          return res.json({ msg: `Files found`, translatedFiles: userFiles });
+        } else {
+          console.log('user has no files');
+          return res.json({ msg: 'Files not found', translatedFiles: [] });
+        }
       }
-    }
-  });
+    });
+  } catch (err) {
+    res.status(500).json({ err: err.message });
+    next();
+  }
 });
 
 /**
@@ -68,10 +70,7 @@ router.post('/', (req, res, next) => {
  */
 router.post('/save', (req, res, next) => {
 
-  const thisUser = {
-    email: req.body.email,
-    authentication: req.body.authentication
-  };
+  const thisUser = getUserFromRequest(req);
 
   const uploadedFile = req.files.file; // file=what we define in react
   const thisFile = {
@@ -99,6 +98,7 @@ router.post('/save', (req, res, next) => {
     });
   } catch (err) {
     res.status(500).json({ err: err.message });
+    next();
   }
 });
 
@@ -133,11 +133,37 @@ router.delete('/delete', (req, res, next) => {
     });
   } catch (err) {
     res.status(500).json({ err: err.message });
+    next();
   }
 });
 
-const deleteFiles = (deletedIds, callback) => {
+router.post('/download', (req, res, next) => {
+  const thisUser = getUserFromRequest(req);
+  const fileToDownload = req.body.translatedFiles;
 
+  try {
+    fileToDownload.forEach(element => {
+      const fileId = element.id;
+      Userfiles.findById(fileId).exec((err, file) => {
+        if (err) throw err;
+
+        // try 1 file first
+        res.set({
+          'Content-Type': 'text/plain',
+          'Content-Disposition': `attachment;filename=${file.file_name}`,
+        });
+        return res.send(Buffer.from(file.data, 'binary'));
+        // return res.send(Buffer.from('Hello buffer', 'binary'));
+      });
+    });
+  } catch (err) {
+    res.status(500).json({ err: err.message });
+    next();
+  }
+
+});
+
+const deleteFiles = (deletedIds, callback) => {
   (deletedIds.forEach(element => {
     console.log('deleteId:', element.id);
 
@@ -158,7 +184,6 @@ const deleteFiles = (deletedIds, callback) => {
   }), () => {
     callback();
   })();
-
 }
 
 const findUserAndPopulateFiles = (inputUser, callback) => {
@@ -207,6 +232,12 @@ const saveFileWrapper = (inputUser, inputFile, callback) => {
 }
 
 const getNewName = (oldName, toLang) => {
+
+  //const ext = oldName.substring(0, oldName.lastIndexOf('.'));
+  //const name = oldName.substring(oldName.lastIndexOf('.') + 1);
+  //name += `_${toLang}`;
+  //console.log(oldName, name, ext);
+
   const name = oldName.split('.');
   if (name.length > 1) {
     name[name.length - 2] += `_${toLang}`;
@@ -214,6 +245,14 @@ const getNewName = (oldName, toLang) => {
     name[0] += `_${toLang}`;
   }
   return name.join('.');
+}
+
+const getUserFromRequest = req => {
+  const user = {
+    email: req.body.email,
+    authentication: req.body.authentication
+  };
+  return user;
 }
 
 /**

@@ -16,16 +16,24 @@ app.use(fileUpload());
 app.use(cors());
 
 // Connect to Mongo
-mongoose.connect(process.env.MONGO_URI, { 
-  useNewUrlParser: true, 
-  useUnifiedTopology: true, 
-  useCreateIndex: true })
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  useCreateIndex: true
+})
   .then(() => console.log('MongoDB connected...'))
   .catch(err => console.error(err));
 
 // app.use('/api/translate/documents', checkJwt, documents);
 app.use('/api/translate/documents', documents);
 
-app.get('*', (req, res) => res.json({ msg: `Welcome to ${req.hostname}` }));
+if (process.env.NODE_ENV === 'production') {
+  //Static file declaration
+  app.use(express.static(path.join(__dirname, '../client/build')));
+  //build mode 
+  app.get('*', (req, res) => { res.sendfile(path.join(__dirname = '../client/build/index.html')); })
+} else {
+  app.get('*', (req, res) => res.json({ msg: `Welcome to ${req.hostname}` }));
+}
 
 app.listen(PORT, () => console.log(`Server started on port ${PORT}...`));
