@@ -191,8 +191,38 @@ class Documents extends React.Component {
     }
   }
 
+  onClickDownload = async (id) => {
+    console.log('onClickDownload', id);
+    const config = await getConfig(this.context, 'application/json');
+
+    await axios({
+      url: `/api/translate/documents/download`,
+      method: `POST`,
+      header: config,
+      responseType: `blob`,
+      data: {
+        translatedFiles: [{ id: id }]
+      }
+    })
+      .then(res => {
+        const contentDisposition = res.headers['content-disposition'];
+        const startIndex = contentDisposition.indexOf("filename=") + 9;
+        const endIndex = contentDisposition.length;
+        const filename = contentDisposition.substring(startIndex, endIndex);
+
+        const url = window.URL.createObjectURL(new Blob([res.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        link.click();
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(error => {
+        console.error(error)
+      });
+  }
+
   onClickDelete = async (id) => {
-    console.log(id);
     const config = await getConfig(this.context, 'application/json');
     const user = getUser(this.context);
 
@@ -299,7 +329,7 @@ class Documents extends React.Component {
             {
               this.state.translatedFiles.length > 0 &&
               this.state.translatedFiles.map((element, index) => (
-                <TranslatedFile key={index} file={element} onClickDelete={this.onClickDelete} />
+                <TranslatedFile key={index} file={element} onClickDelete={this.onClickDelete} onClickDownload={this.onClickDownload} />
               ))
 
             }

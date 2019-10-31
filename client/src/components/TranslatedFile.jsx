@@ -69,6 +69,10 @@ class TranslatedFile extends React.Component {
     this.props.onClickDelete(this.props.file.id);
   }
 
+  onClickDownload = () => {
+    this.props.onClickDownload(this.props.file.id);
+  }
+
   render() {
     const { classes } = this.props;
     return (
@@ -92,7 +96,7 @@ class TranslatedFile extends React.Component {
         </div>
         <div className={classes.details}>
           <CardActions>
-            <Button variant="outlined" size="medium" className={classes.downloadBtn} startIcon={<CloudDownloadOutlinedIcon color="inherit" />}>
+            <Button variant="outlined" size="medium" className={classes.downloadBtn} startIcon={<CloudDownloadOutlinedIcon color="inherit" />} onClick={this.onClickDownload}>
               Download
               </Button>
           </CardActions>
