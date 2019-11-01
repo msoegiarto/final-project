@@ -12,7 +12,8 @@ const UserfilesSchema = new Schema({
   file_name: {
     type: String,
     trim: true,
-    required: true
+    required: true,
+    unique: true
   },
   lang_from: {
     type: String,
@@ -30,12 +31,12 @@ const UserfilesSchema = new Schema({
   },
   create_date: {
     type: Date,
-    defualt: Date.now
+    default: Date.now
   },
   // expiry_date is set 30 days from Date.now
   expiry_date: {
     type: Date,
-    defualt: () => Date.now() + 30 * 24 * 60 * 60 * 1000
+    default: () => Date.now() + 30 * 24 * 60 * 60 * 1000
   },
   file_owner: {
     type: Schema.Types.ObjectId,

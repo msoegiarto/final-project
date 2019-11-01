@@ -12,7 +12,9 @@ const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(fileUpload());
+app.use(fileUpload({
+  limits: { fileSize: 100000 },
+}));
 app.use(cors());
 
 // Connect to Mongo

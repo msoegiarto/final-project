@@ -1,5 +1,7 @@
-// const db = require('../config/database');
 const Router = require('express').Router;
+const ObjectId = require('mongoose').Types.ObjectId;
+const fs = require('fs');
+const JSZip = require('jszip');
 const path = require('path');
 
 const router = new Router();
@@ -21,43 +23,37 @@ router.get('/', (req, res, next) => {
  * @POST /api/translate/documents
  * 
  */
-router.post('/', (req, res, next) => {
-  const thisUser = getUserFromRequest(req);
-
+router.post('/', async (req, res, next) => {
   try {
-    findUserAndPopulateFiles(thisUser, (err, user) => {
-      if (err) throw err;
+    const thisUser = getUserFromRequest(req);
+    const userFound = await _findUserAndPopulateFiles(thisUser);
 
-      if (!user || !user.email || !user.authentication) {
-        console.log('user not found');
-        saveUser(thisUser, (err, savedUser) => {
-          if (err) throw err;
-          console.log('save user');
-          return res.json({ msg: `User saved`, id: savedUser._id, email: savedUser.email, translatedFiles: [] });
+    const returnValue = {};
+    const translatedFiles = [];
+
+    if (!isUserFound(userFound)) {
+      await saveUser(thisUser);
+      returnValue.msg = `user saved`;
+      returnValue.translatedFiles = translatedFiles;
+    } else {
+      const userFiles = userFound.user_files;
+      if (isFileFound(userFiles)) {
+        userFiles.forEach(element => {
+          const newObj = {
+            id: element._id,
+            name: element.file_name,
+            fromLanguage: element.lang_from,
+            toLanguage: element.lang_to
+          }
+          translatedFiles.push(newObj);
         });
+        returnValue.msg = `user has files`;
       } else {
-        console.log('user found', user);
-        if (user.user_files && user.user_files.length > 0) {
-          console.log('user has files');
-
-          const userFiles = [];
-          user.user_files.forEach(element => {
-            let newObj = {
-              id: element._id,
-              name: element.file_name,
-              fromLanguage: element.lang_from,
-              toLanguage: element.lang_to
-            }
-            userFiles.push(newObj);
-          });
-
-          return res.json({ msg: `Files found`, translatedFiles: userFiles });
-        } else {
-          console.log('user has no files');
-          return res.json({ msg: 'Files not found', translatedFiles: [] });
-        }
+        returnValue.msg = `user has no files`;
       }
-    });
+      returnValue.translatedFiles = translatedFiles;
+    }
+    return res.json(returnValue);
   } catch (err) {
     res.status(500).json({ err: err.message });
     next();
@@ -65,37 +61,37 @@ router.post('/', (req, res, next) => {
 });
 
 /**
- * @POST /api/translate/documents/save
+ * @POST /api/translate/documents/translate
  * 
  */
-router.post('/save', (req, res, next) => {
-
-  const thisUser = getUserFromRequest(req);
-
-  const uploadedFile = req.files.file; // file=what we define in react
-  const thisFile = {
-    data: uploadedFile.data,
-    content_type: 'text/plain',
-    file_name: getNewName(uploadedFile.name, req.body.toLanguage),
-    lang_from: req.body.fromLanguage,
-    lang_to: req.body.toLanguage
-  };
-
+router.post('/translate', async (req, res, next) => {
   try {
-    saveFileWrapper(thisUser, thisFile, (user) => {
-      const userFiles = [];
-      user.user_files.forEach(element => {
-        let newObj = {
-          id: element._id,
-          name: element.file_name,
-          fromLanguage: element.lang_from,
-          toLanguage: element.lang_to
-        }
-        userFiles.push(newObj);
-      });
+    const thisUser = getUserFromRequest(req);
+    const uploadedFile = req.files.file; // file=what we define in react
+    const newFilename = await constructNewFilename(thisUser, uploadedFile.name, req.body.toLanguage);
 
-      return res.json({ translatedFiles: userFiles });
+    const thisFile = {
+      data: uploadedFile.data,
+      content_type: 'text/plain',
+      file_name: newFilename,
+      lang_from: req.body.fromLanguage,
+      lang_to: req.body.toLanguage
+    };
+
+    const savedUser = await saveFile(thisUser, thisFile);
+
+    const translatedFiles = [];
+    savedUser.user_files.forEach(element => {
+      let newObj = {
+        id: element._id,
+        name: element.file_name,
+        fromLanguage: element.lang_from,
+        toLanguage: element.lang_to
+      }
+      translatedFiles.push(newObj);
     });
+
+    return res.json({ translatedFiles });
   } catch (err) {
     res.status(500).json({ err: err.message });
     next();
@@ -106,37 +102,45 @@ router.post('/save', (req, res, next) => {
  * @DELETE /api/translate/documents/delete
  * 
  */
-router.delete('/delete', (req, res, next) => {
-  const deletedIds = req.body.translatedFiles;
-  if (!deletedIds || deletedIds.length === 0) return res.status(400).json({ err: 'no ids to be deleted' });
+router.delete('/delete', async (req, res, next) => {
+  const tobeDeletedFileIds = req.body.translatedFiles;
+  if (!tobeDeletedFileIds || tobeDeletedFileIds.length === 0)
+    return res.status(400).json({ err: 'no ids to be deleted' });
+
+  console.log('tobeDeletedFileIds', tobeDeletedFileIds);
+
+  const thisUser = getUserFromRequest(req);
 
   try {
-    deleteFiles(deletedIds, () => {
-      const thisUser = {
-        email: req.body.email,
-        authentication: req.body.authentication
-      };
-      findUserAndPopulateFiles(thisUser, (error, user) => {
-        if (error) throw error;
-        const userFiles = [];
-        user.user_files.forEach(element => {
-          let newObj = {
-            id: element._id,
-            name: element.file_name,
-            fromLanguage: element.lang_from,
-            toLanguage: element.lang_to
-          }
-          userFiles.push(newObj);
-        });
-        return res.json({ msg: 'files deleted', translatedFiles: userFiles });
+    const user = await deleteFiles(thisUser, tobeDeletedFileIds);
+    const userfiles = user.user_files;
+    
+    const translatedFiles = [];
+
+    if (isFileFound(userfiles)) {
+      userfiles.forEach(element => {
+        let newObj = {
+          id: element._id,
+          name: element.file_name,
+          fromLanguage: element.lang_from,
+          toLanguage: element.lang_to
+        }
+        translatedFiles.push(newObj);
       });
-    });
+    }
+    console.log(translatedFiles);
+
+    return res.json({ msg: 'files deleted', translatedFiles });
   } catch (err) {
     res.status(500).json({ err: err.message });
     next();
   }
 });
 
+/**
+ * @POST /api/translate/documents/download
+ * 
+ */
 router.post('/download', (req, res, next) => {
   const thisUser = getUserFromRequest(req);
   const fileToDownload = req.body.translatedFiles;
@@ -148,12 +152,20 @@ router.post('/download', (req, res, next) => {
         if (err) throw err;
 
         // try 1 file first
-        res.set({
-          'Content-Type': 'text/plain',
-          'Content-Disposition': `attachment;filename=${file.file_name}`,
-        });
-        return res.send(Buffer.from(file.data, 'binary'));
-        // return res.send(Buffer.from('Hello buffer', 'binary'));
+
+        // zip the file
+        const zip = new JSZip();
+        const dataFolder = zip.folder('translatedfiles');
+        const fileData = file.data;
+        dataFolder.file(`${file.file_name}`, fileData);
+        zip.generateAsync({ type: 'nodebuffer' })
+          .then((content) => {
+            res.set({
+              'Content-Type': 'text/plain',
+              'Content-Disposition': `attachment;filename=${file.file_name}.zip`,
+            });
+            return res.send(Buffer.from(content, 'binary'));
+          });
       });
     });
   } catch (err) {
@@ -163,42 +175,112 @@ router.post('/download', (req, res, next) => {
 
 });
 
-const deleteFiles = (deletedIds, callback) => {
-  (deletedIds.forEach(element => {
-    console.log('deleteId:', element.id);
+const deleteFiles = async (inputUser, tobeDeletedFileIds) => {
+  for (let i = 0; i < tobeDeletedFileIds.length; i++) {
+    // remove file reference on user
+    await Users.updateOne(
+      {},
+      {
+        "$pull": {
+          "user_files": new ObjectId(tobeDeletedFileIds[i].id)
+        }
+      }
+    );
+    // delete the file from userfiles table
+    await Userfiles.deleteOne({ _id: tobeDeletedFileIds[i].id });
+  }
 
-    Userfiles.findById(element.id).exec((err, userFiles) => {
-      if (err) throw err;
+  // get latest data from user
+  const user = await _findUserAndPopulateFiles(inputUser);
 
-      userFiles.remove(error => {
-        if (error) throw error;
-
-        Users.updateOne(
-          { _id: userFiles.file_owner },
-          { $pull: { user_files: userFiles._id } },
-          // { multi: true } //if reference exists in multiple documents 
-        )
-          .exec();
-      });
-    });
-  }), () => {
-    callback();
-  })();
+  return user;
 }
 
-const findUserAndPopulateFiles = (inputUser, callback) => {
-  Users.findOne(inputUser)
-    .populate('user_files', '_id file_name lang_from lang_to')
-    .exec((error, user) => callback(error, user));
+const _deleteFile = async (tobeDeletedFileIds) => {
+
 }
 
-const saveUser = (inputUser, callback) => {
+
+const saveUser = async (inputUser) => {
   const newUser = new Users(inputUser);
-
-  newUser.save({}, (error, user) => callback(error, user));
+  const savedUser = await newUser.save({});
+  return savedUser;
 }
 
-const saveFile = (inputFile, userId, callback) => {
+const saveFile = async (inputUser, inputFile) => {
+
+  const userFound = await _findUserAndPopulateFiles(inputUser);
+
+  const fileSaved = await _saveFile(userFound._id, inputFile);
+
+  // push reference
+  userFound.user_files.push(fileSaved);
+
+  // save reference
+  const userResult = await userFound.save({});
+
+  return userResult;
+
+}
+
+const constructNewFilename = async (inputUser, oldName, toLang) => {
+
+  const nameArray = oldName.split('.');
+  const ext = nameArray.pop();
+  const name = nameArray.join('.') + '_' + toLang;
+
+  const newFilenameNoExt = await _getNewFilenameNoExt(inputUser, name);
+
+  return (newFilenameNoExt + '.' + ext);
+}
+
+/** 
+ * @param filename
+ * format: <filename>_<toLanguage>
+ * example: airbnbGuide_it
+*/
+const _getNewFilenameNoExt = async (inputUser, filename) => {
+
+  const user = await Users.findOne(inputUser);
+
+  // find duplicate filename
+  const fileFound = await Userfiles
+    .findOne({ file_owner: user._id, file_name: { $regex: '.*' + filename + '.*' } })
+    .sort({ create_date: 'desc' });
+
+  if (isFileFound(fileFound)) {
+    // remove extension
+    const filenameArr = fileFound.file_name.split('.');
+    filenameArr[filenameArr.length - 1] = null;
+    filenameArr.pop();
+
+    // remove prefix
+    const tail = filenameArr.join('.').replace(filename, '');
+
+    if (!tail) {
+      return (filename + '_2');
+    } else {
+      // remove underscore
+      const numberStr = tail.substring(1);
+      // increment the number
+      const newNumber = parseInt(numberStr) + 1;
+      return (filename + '_' + newNumber);
+    }
+  }
+
+  return filename;
+}
+
+const _findUserAndPopulateFiles = async (inputUser) => {
+  const userFound = await Users.findOne(inputUser)
+    .populate('user_files')
+    .exec();
+  return new Promise(resolve => {
+    resolve(userFound);
+  });;
+}
+
+const _saveFile = async (userId, inputFile) => {
   const newFile = new Userfiles({
     data: inputFile.data,
     content_type: inputFile.content_type,
@@ -208,51 +290,26 @@ const saveFile = (inputFile, userId, callback) => {
     file_owner: userId
   });
 
-  newFile.save({}, (error, file) => callback(error, file))
-}
-
-const saveFileWrapper = (inputUser, inputFile, callback) => {
-
-  findUserAndPopulateFiles(inputUser, (error, user) => {
-    if (error) throw error;
-    if (!user || !user.email || !user.authentication) throw new Error('user not found');
-
-    saveFile(inputFile, user._id, (error, file) => {
-      if (error) throw error;
-
-      user.user_files.push(file);
-
-      user.save({}, (error, user) => {
-        if (error) throw error;
-        callback(user);
-      });
-    });
-  });
-
-}
-
-const getNewName = (oldName, toLang) => {
-
-  //const ext = oldName.substring(0, oldName.lastIndexOf('.'));
-  //const name = oldName.substring(oldName.lastIndexOf('.') + 1);
-  //name += `_${toLang}`;
-  //console.log(oldName, name, ext);
-
-  const name = oldName.split('.');
-  if (name.length > 1) {
-    name[name.length - 2] += `_${toLang}`;
-  } else {
-    name[0] += `_${toLang}`;
-  }
-  return name.join('.');
+  const savedFile = await newFile.save({});
+  return savedFile;
 }
 
 const getUserFromRequest = req => {
-  const user = {
+  return {
     email: req.body.email,
     authentication: req.body.authentication
   };
-  return user;
+}
+
+const isFileFound = files => {
+  if (Array.isArray(files)) {
+    return (files.length > 0);
+  }
+  return (files && files.file_name !== '');
+}
+
+const isUserFound = user => {
+  return (user && user.email && user.authentication);
 }
 
 /**

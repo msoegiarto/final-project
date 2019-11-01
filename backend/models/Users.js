@@ -9,7 +9,12 @@ const UserSchema = new Schema({
   },
   authentication: {
     type: String,
-    required: true
+    required: true,
+    unique: true
+  },
+  create_date: {
+    type: Date,
+    default: Date.now
   },
   user_files: [
     { type: Schema.Types.ObjectId, ref: 'Userfiles' }
