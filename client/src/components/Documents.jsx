@@ -101,7 +101,6 @@ class Documents extends React.Component {
 
     try {
       const res = await axios.post(`/api/translate/documents/`, user, config);
-
       console.log('#####', res.data);
       if (res.data.translatedFiles) {
         this.setState(prevState => ({
@@ -173,7 +172,7 @@ class Documents extends React.Component {
     });
 
     try {
-      const res = await axios.post(`/api/translate/documents/save`, formData, config);
+      const res = await axios.post(`/api/translate/documents/translate`, formData, config);
       console.log('onClickTranslate', res.data);
 
       this.setState(prevState => ({
@@ -185,7 +184,6 @@ class Documents extends React.Component {
         toLanguagesList: languages,
         translatedFiles: res.data.translatedFiles
       }));
-
     } catch (err) {
       console.error(err)
     }
@@ -232,28 +230,26 @@ class Documents extends React.Component {
     };
 
     if (id === 'ALL') {
-      const translatedFileIds = [];
+      const tobeDeletedFileIds = [];
       this.state.translatedFiles.forEach(element => {
-        translatedFileIds.push({ id: element.id });
+        tobeDeletedFileIds.push({ id: element.id });
       });
-
-      data.translatedFiles = translatedFileIds;
+      data.translatedFiles = tobeDeletedFileIds;
+      this.setState({ files: null });
     } else {
       data.translatedFiles = [{ id: id }];
     }
 
-    await axios.delete(`/api/translate/documents/delete`, { data: data, header: config })
-      .then(res => {
-        this.setState(prevState => ({
-          ...prevState,
-          isSuccess: false,
-          translatedFiles: res.data.translatedFiles
-        }));
-        console.log(res.data.msg);
-      })
-      .catch(error => {
-        console.error(error)
-      });
+    try {
+      const res = await axios.delete(`/api/translate/documents/delete`, { data: data, header: config });
+      this.setState(prevState => ({
+        ...prevState,
+        isSuccess: false,
+        translatedFiles: res.data.translatedFiles
+      }));
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   onClickDeleteAll = () => {
@@ -279,49 +275,51 @@ class Documents extends React.Component {
         </Fragment>
         <Fragment>
           <form className={classes.form} autoComplete="off" onSubmit={this.onClickTranslate}>
-            {
-              this.state.translatedFiles.length < this.state.limit &&
 
-              <Grid container className={classes.upperSide} spacing={1} alignItems="center">
+            <Grid container className={classes.upperSide} spacing={1} alignItems="center">
+              {
+                this.state.translatedFiles.length < this.state.limit &&
                 <Grid item xs={12}>
                   <UploadDropzone dropzoneChangeHandler={this.dropzoneChangeHandler} />
                 </Grid>
-                {
-                  this.state.files && this.state.files.length > 0 &&
-                  <Grid item xs={12} sm={4}>
-                    <Select
-                      selectChangeHandler={this.selectChangeHandler}
-                      name={'fromLanguage'}
-                      label={'From'}
-                      id={'select-from-language'}
-                      helperText={'Required'}
-                      languages={this.state.fromLanguagesList}
-                      value={this.state.fromLanguage}
-                    />
-                  </Grid>
-                }
-                {
-                  this.state.files && this.state.files.length > 0 &&
-                  <Grid item xs={12} sm={4}>
-                    <Select
-                      selectChangeHandler={this.selectChangeHandler}
-                      name={'toLanguage'}
-                      label={'To'}
-                      id={'select-to-language'}
-                      helperText={'Required'}
-                      languages={this.state.toLanguagesList}
-                      value={this.state.toLanguage}
-                    />
-                  </Grid>
-                }
-                {
-                  this.state.files && this.state.files.length > 0 && this.state.fromLanguage && this.state.toLanguage &&
-                  <Grid item xs={12} sm={4}>
-                    <Button type="submit" variant="outlined" size="large" className={classes.sendBtn} startIcon={<SendOutlinedIcon color="inherit" />} disabled={this.state.translatedFiles.length === 3}>Translate</Button>
-                  </Grid>
-                }
-              </Grid>
-            }
+              }
+              {
+                this.state.files && this.state.files.length > 0
+                && this.state.translatedFiles.length < this.state.limit &&
+                <Grid item xs={12} sm={4}>
+                  <Select
+                    selectChangeHandler={this.selectChangeHandler}
+                    name={'fromLanguage'}
+                    label={'From'}
+                    id={'select-from-language'}
+                    helperText={'Required'}
+                    languages={this.state.fromLanguagesList}
+                    value={this.state.fromLanguage}
+                  />
+                </Grid>
+              }
+              {
+                this.state.files && this.state.files.length > 0
+                && this.state.translatedFiles.length < this.state.limit &&
+                <Grid item xs={12} sm={4}>
+                  <Select
+                    selectChangeHandler={this.selectChangeHandler}
+                    name={'toLanguage'}
+                    label={'To'}
+                    id={'select-to-language'}
+                    helperText={'Required'}
+                    languages={this.state.toLanguagesList}
+                    value={this.state.toLanguage}
+                  />
+                </Grid>
+              }
+              {
+                this.state.files && this.state.files.length > 0 && this.state.fromLanguage && this.state.toLanguage &&
+                <Grid item xs={12} sm={4}>
+                  <Button type="submit" variant="outlined" size="large" className={classes.sendBtn} startIcon={<SendOutlinedIcon color="inherit" />} disabled={this.state.translatedFiles.length === 3}>Translate</Button>
+                </Grid>
+              }
+            </Grid>
           </form>
         </Fragment>
         <Fragment>
@@ -331,7 +329,6 @@ class Documents extends React.Component {
               this.state.translatedFiles.map((element, index) => (
                 <TranslatedFile key={index} file={element} onClickDelete={this.onClickDelete} onClickDownload={this.onClickDownload} />
               ))
-
             }
           </Grid>
           {
