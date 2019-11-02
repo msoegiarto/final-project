@@ -26,33 +26,20 @@ router.get('/', (req, res, next) => {
 router.post('/', async (req, res, next) => {
   try {
     const thisUser = getUserFromRequest(req);
-    const userFound = await _findUserAndPopulateFiles(thisUser);
+    const userFound = await findUserAndPopulateFiles(thisUser);
 
     const returnValue = {};
-    const translatedFiles = [];
 
-    if (!isUserFound(userFound)) {
+    if (!(userFound && userFound.email && userFound.authentication)) {
       await saveUser(thisUser);
       returnValue.msg = `user saved`;
-      returnValue.translatedFiles = translatedFiles;
+      returnValue.translatedFiles = [];
     } else {
-      const userFiles = userFound.user_files;
-      if (isFileFound(userFiles)) {
-        userFiles.forEach(element => {
-          const newObj = {
-            id: element._id,
-            name: element.file_name,
-            fromLanguage: element.lang_from,
-            toLanguage: element.lang_to
-          }
-          translatedFiles.push(newObj);
-        });
-        returnValue.msg = `user has files`;
-      } else {
-        returnValue.msg = `user has no files`;
-      }
+      const translatedFiles = getTranslatedFiles(userFound.user_file);
+      returnValue.msg = translatedFiles.length > 0 ? `user has files` : `user has no files`;
       returnValue.translatedFiles = translatedFiles;
     }
+
     return res.json(returnValue);
   } catch (err) {
     res.status(500).json({ err: err.message });
@@ -78,18 +65,15 @@ router.post('/translate', async (req, res, next) => {
       lang_to: req.body.toLanguage
     };
 
-    const savedUser = await saveFile(thisUser, thisFile);
+    //////////////////////////////////////////
+    //                                      //
+    // TODO: call the translation API here  //
+    //                                      //
+    //////////////////////////////////////////
 
-    const translatedFiles = [];
-    savedUser.user_files.forEach(element => {
-      let newObj = {
-        id: element._id,
-        name: element.file_name,
-        fromLanguage: element.lang_from,
-        toLanguage: element.lang_to
-      }
-      translatedFiles.push(newObj);
-    });
+    const savedUser = await saveFileAndRetrieveUserInfo(thisUser, thisFile);
+
+    const translatedFiles = getTranslatedFiles(savedUser.user_files);
 
     return res.json({ translatedFiles });
   } catch (err) {
@@ -105,29 +89,13 @@ router.post('/translate', async (req, res, next) => {
 router.delete('/delete', async (req, res, next) => {
   const tobeDeletedFileIds = req.body.translatedFiles;
   if (!tobeDeletedFileIds || tobeDeletedFileIds.length === 0)
-    return res.status(400).json({ err: 'no ids to be deleted' });
-
-  console.log('tobeDeletedFileIds', tobeDeletedFileIds);
-
-  const thisUser = getUserFromRequest(req);
+    return res.status(400).json({ err: 'no files to be deleted' });
 
   try {
-    const user = await deleteFiles(thisUser, tobeDeletedFileIds);
-    const userfiles = user.user_files;
-    
-    const translatedFiles = [];
+    const thisUser = getUserFromRequest(req);
+    const userFound = await deleteFilesAndRetrieveUserInfo(thisUser, tobeDeletedFileIds);
+    const translatedFiles = getTranslatedFiles(userFound.user_file);
 
-    if (isFileFound(userfiles)) {
-      userfiles.forEach(element => {
-        let newObj = {
-          id: element._id,
-          name: element.file_name,
-          fromLanguage: element.lang_from,
-          toLanguage: element.lang_to
-        }
-        translatedFiles.push(newObj);
-      });
-    }
     console.log(translatedFiles);
 
     return res.json({ msg: 'files deleted', translatedFiles });
@@ -141,33 +109,45 @@ router.delete('/delete', async (req, res, next) => {
  * @POST /api/translate/documents/download
  * 
  */
-router.post('/download', (req, res, next) => {
-  const thisUser = getUserFromRequest(req);
-  const fileToDownload = req.body.translatedFiles;
+router.post('/download', async (req, res, next) => {
+  const tobeDownloadedFileIds = req.body.translatedFiles;
+  if (!tobeDownloadedFileIds || tobeDownloadedFileIds.length === 0)
+    return res.status(400).json({ err: 'no file to be downloaded' });
 
   try {
-    fileToDownload.forEach(element => {
-      const fileId = element.id;
-      Userfiles.findById(fileId).exec((err, file) => {
-        if (err) throw err;
+    if (tobeDownloadedFileIds.length === 1) {
+      const fileId = tobeDownloadedFileIds[0].id;
+      const file = await Userfiles.findById(fileId);
+      const fileData = file.data;
 
-        // try 1 file first
+      // download 1 file 
+      res.set({
+        'Content-Type': 'text/plain',
+        'Content-Disposition': `attachment;filename=${file.file_name}`,
+      });
+      return res.send(Buffer.from(fileData, 'binary'));
+    } else {
+      // zip multiple file
+      const zip = new JSZip();
+      const dataFolder = zip.folder('translatedfiles');
 
-        // zip the file
-        const zip = new JSZip();
-        const dataFolder = zip.folder('translatedfiles');
+      for (let i = 0; i < tobeDownloadedFileIds.length; i++) {
+        const fileId = tobeDownloadedFileIds[i].id;
+        const file = await Userfiles.findById(fileId);
         const fileData = file.data;
         dataFolder.file(`${file.file_name}`, fileData);
-        zip.generateAsync({ type: 'nodebuffer' })
-          .then((content) => {
-            res.set({
-              'Content-Type': 'text/plain',
-              'Content-Disposition': `attachment;filename=${file.file_name}.zip`,
-            });
-            return res.send(Buffer.from(content, 'binary'));
+      }
+
+      zip.generateAsync({ type: 'nodebuffer' })
+        .then((content) => {
+          res.set({
+            'Content-Type': 'text/plain',
+            'Content-Disposition': `attachment;filename=${Date.now()}.zip`,
           });
-      });
-    });
+          return res.send(Buffer.from(content, 'binary'));
+        });
+    }
+
   } catch (err) {
     res.status(500).json({ err: err.message });
     next();
@@ -175,9 +155,9 @@ router.post('/download', (req, res, next) => {
 
 });
 
-const deleteFiles = async (inputUser, tobeDeletedFileIds) => {
+const deleteFilesAndRetrieveUserInfo = async (inputUser, tobeDeletedFileIds) => {
   for (let i = 0; i < tobeDeletedFileIds.length; i++) {
-    // remove file reference on user
+    // remove the file reference on the user record
     await Users.updateOne(
       {},
       {
@@ -191,15 +171,10 @@ const deleteFiles = async (inputUser, tobeDeletedFileIds) => {
   }
 
   // get latest data from user
-  const user = await _findUserAndPopulateFiles(inputUser);
+  const user = await findUserAndPopulateFiles(inputUser);
 
   return user;
 }
-
-const _deleteFile = async (tobeDeletedFileIds) => {
-
-}
-
 
 const saveUser = async (inputUser) => {
   const newUser = new Users(inputUser);
@@ -207,16 +182,17 @@ const saveUser = async (inputUser) => {
   return savedUser;
 }
 
-const saveFile = async (inputUser, inputFile) => {
+const saveFileAndRetrieveUserInfo = async (inputUser, inputFile) => {
 
-  const userFound = await _findUserAndPopulateFiles(inputUser);
+  const userFound = await findUserAndPopulateFiles(inputUser);
+  if (!userFound || !userFound._id) throw new Error({ message: 'User not found in the database' });
 
   const fileSaved = await _saveFile(userFound._id, inputFile);
 
-  // push reference
+  // push file reference to user record
   userFound.user_files.push(fileSaved);
 
-  // save reference
+  // save the user record
   const userResult = await userFound.save({});
 
   return userResult;
@@ -242,6 +218,7 @@ const constructNewFilename = async (inputUser, oldName, toLang) => {
 const _getNewFilenameNoExt = async (inputUser, filename) => {
 
   const user = await Users.findOne(inputUser);
+  if (!userFound || !userFound._id) throw new Error({ message: 'User not found in the database' });
 
   // find duplicate filename
   const fileFound = await Userfiles
@@ -271,13 +248,11 @@ const _getNewFilenameNoExt = async (inputUser, filename) => {
   return filename;
 }
 
-const _findUserAndPopulateFiles = async (inputUser) => {
-  const userFound = await Users.findOne(inputUser)
+const findUserAndPopulateFiles = async (inputUser) => {
+  const user = await Users.findOne(inputUser)
     .populate('user_files')
     .exec();
-  return new Promise(resolve => {
-    resolve(userFound);
-  });;
+  return user;
 }
 
 const _saveFile = async (userId, inputFile) => {
@@ -294,7 +269,33 @@ const _saveFile = async (userId, inputFile) => {
   return savedFile;
 }
 
+const getTranslatedFiles = userFiles => {
+  const translatedFiles = [];
+
+  if (isFileFound(userFiles)) {
+    userFiles.forEach(element => {
+      let newObj = {
+        id: element._id,
+        name: element.file_name,
+        fromLanguage: element.lang_from,
+        toLanguage: element.lang_to
+      };
+      translatedFiles.push(newObj);
+    });
+  }
+
+  return translatedFiles;
+}
+
 const getUserFromRequest = req => {
+  let errMessage = '';
+  if (!req.body.email) errMessage += 'User email';
+  if (!req.body.authentication) errMessage += errMessage ? ' and authentication' : 'User authentication';
+  if (errMessage) {
+    errMessage += ' not found';
+    throw new Error({ message: errMessage });
+  }
+
   return {
     email: req.body.email,
     authentication: req.body.authentication
@@ -306,10 +307,6 @@ const isFileFound = files => {
     return (files.length > 0);
   }
   return (files && files.file_name !== '');
-}
-
-const isUserFound = user => {
-  return (user && user.email && user.authentication);
 }
 
 /**
@@ -336,6 +333,33 @@ router.post('/:from/:to', (req, res, next) => {
   });
 
   res.json({ msg: `POST /api/translate/documents`, fileName: uploadedFile.name, filePath: `/uploads/${uploadedFile.name}` });
+});
+
+/**
+ * @POST /api/translate/documents/:download_test
+ * test zipping one file
+ */
+router.post('/download_test', (req, res, next) => {
+  const tobeDownloadedFileIds = req.body.translatedFiles;
+
+  const fileId = tobeDownloadedFileIds[0].id;
+  Userfiles.findById(fileId).exec((err, file) => {
+    if (err) throw err;
+    const fileData = file.data;
+    // zip the file
+    const zip = new JSZip();
+    const dataFolder = zip.folder('translatedfiles');
+    dataFolder.file(`${file.file_name}`, fileData);
+    zip.generateAsync({ type: 'nodebuffer' })
+      .then((content) => {
+        res.set({
+          'Content-Type': 'text/plain',
+          'Content-Disposition': `attachment;filename=${file.file_name}.zip`,
+        });
+        return res.send(Buffer.from(content, 'binary'));
+      });
+  });
+
 });
 
 module.exports = router;

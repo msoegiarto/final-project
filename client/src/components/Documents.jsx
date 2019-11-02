@@ -193,31 +193,46 @@ class Documents extends React.Component {
     console.log('onClickDownload', id);
     const config = await getConfig(this.context, 'application/json');
 
-    await axios({
-      url: `/api/translate/documents/download`,
-      method: `POST`,
-      header: config,
-      responseType: `blob`,
-      data: {
-        translatedFiles: [{ id: id }]
-      }
-    })
-      .then(res => {
-        const contentDisposition = res.headers['content-disposition'];
-        const startIndex = contentDisposition.indexOf("filename=") + 9;
-        const endIndex = contentDisposition.length;
-        const filename = contentDisposition.substring(startIndex, endIndex);
-
-        const url = window.URL.createObjectURL(new Blob([res.data]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', filename);
-        link.click();
-        window.URL.revokeObjectURL(url);
-      })
-      .catch(error => {
-        console.error(error)
+    const data = {};
+    if (id === 'ALL') {
+      const tobeDownloadedFileIds = [];
+      this.state.translatedFiles.forEach(element => {
+        tobeDownloadedFileIds.push({ id: element.id });
       });
+      data.translatedFiles = tobeDownloadedFileIds;
+      this.setState({ files: null });
+    } else {
+      data.translatedFiles = [{ id: id }];
+    }
+
+    try {
+      const res = await axios({
+        url: `/api/translate/documents/download`,
+        method: `POST`,
+        headers: config.headers,
+        responseType: `blob`,
+        data: data
+      });
+
+      const contentDisposition = res.headers['content-disposition'];
+      const startIndex = contentDisposition.indexOf("filename=") + 9;
+      const endIndex = contentDisposition.length;
+      const filename = contentDisposition.substring(startIndex, endIndex);
+
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      link.click();
+      window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  onClickDownloadAll = () => {
+    this.onClickDownload('ALL');
   }
 
   onClickDelete = async (id) => {
@@ -241,7 +256,13 @@ class Documents extends React.Component {
     }
 
     try {
-      const res = await axios.delete(`/api/translate/documents/delete`, { data: data, header: config });
+      const res = await axios({
+        url: `/api/translate/documents/delete`,
+        method: `DELETE`,
+        headers: config.headers,
+        data: data
+      });
+
       this.setState(prevState => ({
         ...prevState,
         isSuccess: false,
@@ -337,7 +358,7 @@ class Documents extends React.Component {
               <Grid item xs={12} md={6}>
                 <ButtonGroup fullWidth aria-label="full width outlined button group">
                   <Button variant="contained" size="medium" className={classes.deleteBtn} startIcon={<DeleteOutlinedIcon color="inherit" />} onClick={this.onClickDeleteAll}>Delete All</Button>
-                  <Button variant="contained" size="medium" className={classes.downloadBtn} startIcon={<CloudDownloadOutlinedIcon color="inherit" />}>Download All</Button>
+                  <Button variant="contained" size="medium" className={classes.downloadBtn} startIcon={<CloudDownloadOutlinedIcon color="inherit" />} onClick={this.onClickDownloadAll}>Download All</Button>
                 </ButtonGroup>
               </Grid>
             </Grid>

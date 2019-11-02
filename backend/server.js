@@ -26,8 +26,8 @@ mongoose.connect(process.env.MONGO_URI, {
   .then(() => console.log('MongoDB connected...'))
   .catch(err => console.error(err));
 
-// app.use('/api/translate/documents', checkJwt, documents);
-app.use('/api/translate/documents', documents);
+app.use('/api/translate/documents', checkJwt, documents);
+// app.use('/api/translate/documents', documents);
 
 if (process.env.NODE_ENV === 'production') {
   //Static file declaration
