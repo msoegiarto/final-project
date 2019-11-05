@@ -1,6 +1,9 @@
 const Router = require('express').Router;
 const ObjectId = require('mongoose').Types.ObjectId;
+const axios = require('axios');
+const readline = require('readline');
 const fs = require('fs');
+const { once } = require('events');
 const JSZip = require('jszip');
 const path = require('path');
 
@@ -9,6 +12,14 @@ const router = new Router();
 // Users model
 const Users = require('../models/Users');
 const Userfiles = require('../models/Userfiles');
+
+// Environment variables
+const get_token_url = 'MS_GLOBAL_TRANSLATOR_TEXT_ACCESS_TOKEN_URL';
+if (!process.env[get_token_url])
+  throw new Error('Please set/export the following environment variable: ' + get_token_url);
+const translation_base_url = 'MS_TRANSLATOR_TEXT_BASE_URL';
+if (!process.env[translation_base_url])
+  throw new Error('Please set/export the following environment variable: ' + translation_base_url);
 
 /**
  * @GET /api/translate/documents
@@ -35,15 +46,15 @@ router.post('/', async (req, res, next) => {
       returnValue.msg = `user saved`;
       returnValue.translatedFiles = [];
     } else {
-      const translatedFiles = getTranslatedFiles(userFound.user_file);
+      const translatedFiles = getTranslatedFiles(userFound.user_files);
       returnValue.msg = translatedFiles.length > 0 ? `user has files` : `user has no files`;
       returnValue.translatedFiles = translatedFiles;
     }
 
     return res.json(returnValue);
   } catch (err) {
-    res.status(500).json({ err: err.message });
-    next();
+    res.status(500).json({ err });
+    next(err);
   }
 });
 
@@ -54,7 +65,11 @@ router.post('/', async (req, res, next) => {
 router.post('/translate', async (req, res, next) => {
   try {
     const thisUser = getUserFromRequest(req);
+
+    if (!req.files || !req.files.file) throw new Error('No file uploaded');
+
     const uploadedFile = req.files.file; // file=what we define in react
+
     const newFilename = await constructNewFilename(thisUser, uploadedFile.name, req.body.toLanguage);
 
     const thisFile = {
@@ -77,8 +92,8 @@ router.post('/translate', async (req, res, next) => {
 
     return res.json({ translatedFiles });
   } catch (err) {
-    res.status(500).json({ err: err.message });
-    next();
+    res.status(500).json({ err });
+    next(err);
   }
 });
 
@@ -94,14 +109,12 @@ router.delete('/delete', async (req, res, next) => {
   try {
     const thisUser = getUserFromRequest(req);
     const userFound = await deleteFilesAndRetrieveUserInfo(thisUser, tobeDeletedFileIds);
-    const translatedFiles = getTranslatedFiles(userFound.user_file);
-
-    console.log(translatedFiles);
+    const translatedFiles = getTranslatedFiles(userFound.user_files);
 
     return res.json({ msg: 'files deleted', translatedFiles });
   } catch (err) {
-    res.status(500).json({ err: err.message });
-    next();
+    res.status(500).json({ err });
+    next(err);
   }
 });
 
@@ -149,8 +162,8 @@ router.post('/download', async (req, res, next) => {
     }
 
   } catch (err) {
-    res.status(500).json({ err: err.message });
-    next();
+    res.status(500).json({ err });
+    next(err);
   }
 
 });
@@ -172,6 +185,7 @@ const deleteFilesAndRetrieveUserInfo = async (inputUser, tobeDeletedFileIds) => 
 
   // get latest data from user
   const user = await findUserAndPopulateFiles(inputUser);
+  if (!userFound || !userFound._id) throw new Error({ message: 'User not found in the database' });
 
   return user;
 }
@@ -218,7 +232,7 @@ const constructNewFilename = async (inputUser, oldName, toLang) => {
 const _getNewFilenameNoExt = async (inputUser, filename) => {
 
   const user = await Users.findOne(inputUser);
-  if (!userFound || !userFound._id) throw new Error({ message: 'User not found in the database' });
+  if (!user || !user._id) throw new Error('User not found in the database');
 
   // find duplicate filename
   const fileFound = await Userfiles
@@ -309,17 +323,30 @@ const isFileFound = files => {
   return (files && files.file_name !== '');
 }
 
+const getMsTranslationToken = async () => {
+
+  const getToken = await axios({
+    method: 'POST',
+    url: process.env[get_token_url],
+    headers: { 'Ocp-Apim-Subscription-Key': process.env.MS_TRANSLATION_TEXT_SUBSCRIPTION_KEY },
+    data: ''
+  });
+
+  console.log('getToken', getToken.data);
+
+}
+
 /**
- * @POST /api/translate/documents/:from/:to
- * @deprecated This route is no longer used, but I'm keeping it for future reference
+ * @POST /api/translate/documents/save_test
+ * 
  */
-router.post('/:from/:to', (req, res, next) => {
+router.post('/save_test', (req, res, next) => {
   if (req.files === null) {
     return res.status(400).json({ msg: `No file uploaded` });
   }
 
-  const fromLanguage = req.params.from;
-  const toLanguage = req.params.to;
+  const fromLanguage = req.body.from;
+  const toLanguage = req.body.to;
   console.log(fromLanguage, toLanguage);
 
   const uploadedFile = req.files.file; // file=what we define in react
@@ -336,7 +363,7 @@ router.post('/:from/:to', (req, res, next) => {
 });
 
 /**
- * @POST /api/translate/documents/:download_test
+ * @POST /api/translate/documents/download_test
  * test zipping one file
  */
 router.post('/download_test', (req, res, next) => {
@@ -359,6 +386,84 @@ router.post('/download_test', (req, res, next) => {
         return res.send(Buffer.from(content, 'binary'));
       });
   });
+
+});
+
+router.post('/readline_localfile_test', async (req, res, next) => {
+  try {
+    const CHAR_COUNT_LIMIT_FOR_ONE_REQUEST = 4000;
+    let totalCharLength = 0;
+    let count = 0;
+    let textArray = [];
+    const countLimit = 50;
+
+    const dir = path.join(__dirname, `../../test_file/die_verwandlung.txt`);
+
+    // Note: we use the crlfDelay option to recognize all instances of CR LF ('\r\n') in input.txt as a single line break.
+    const readInterface = readline.createInterface({
+      input: fs.createReadStream(dir),
+      crlfDelay: Infinity
+      // output: process.stdout,
+      // console: false
+    });
+
+    let string = '';
+    readInterface.on('line', function (line) {
+      let charLength = line.trim().split('').length;
+      count += charLength;
+      string += line;
+
+      if (count + charLength >= countLimit) {
+        textArray.push({ 'Text': string });
+        string = '';
+        count = 0;
+      }
+
+      console.log('string:', string);
+      totalCharLength += charLength;
+    });
+
+    await once(readInterface, 'close');
+
+    textArray.forEach((element, index) => {
+      console.log('index', index, ':', element);
+    });
+
+    const get_token_url = 'MS_GLOBAL_TRANSLATOR_TEXT_ACCESS_TOKEN_URL';
+    if (!process.env[get_token_url])
+      throw new Error('Please set/export the following environment variable: ' + get_token_url);
+
+    const getToken = await axios({
+      method: 'POST',
+      url: process.env[get_token_url],
+      headers: { 'Ocp-Apim-Subscription-Key': process.env.MS_TRANSLATION_TEXT_SUBSCRIPTION_KEY },
+      data: ''
+    });
+
+    console.log('getToken', getToken.data);
+
+    const translation_url = process.env[translation_base_url] + `&from=${req.body.fromLanguage}&to=${req.body.toLanguage}&textType=plain`;
+
+    const res = await axios({
+      method: 'POST',
+      url: translation_url,
+      headers: { 'Authorization': `Bearer ${getToken.data}`, 'Content-Type': `application/json` },
+      data: textArray
+    });
+
+    if (res.data.error) {
+      throw res.data.error;
+    } else {
+      console.log(res.data[0].translations);
+      console.log(res.data[0].translations[0].text);
+    }
+
+    res.json({ totalCharLength: totalCharLength, text: res.data[0].translations[0].text });
+
+  } catch (err) {
+    console.error(err);
+    res.json({ err: 'something went wrong' });
+  }
 
 });
 
