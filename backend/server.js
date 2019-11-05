@@ -17,10 +17,22 @@ app.use(fileUpload({
 }));
 app.use(cors());
 
+// environment variables validation
+if (!process.env.MONGO_URI)
+  throw new Error('Please set/export the following environment variable: MONGO_URI');
+if (!process.env.AUTH0_DOMAIN)
+  throw new Error('Please set/export the following environment variable: AUTH0_DOMAIN');
+if (!process.env.AUTH0_AUDIENCE)
+  throw new Error('Please set/export the following environment variable: AUTH0_AUDIENCE');
+if (!process.env.MS_TRANSLATION_TEXT_SUBSCRIPTION_KEY)
+  throw new Error('Please set/export the following environment variable: MS_TRANSLATION_TEXT_SUBSCRIPTION_KEY');
+if (!process.env.MS_GLOBAL_TRANSLATOR_TEXT_ACCESS_TOKEN_URL)
+  throw new Error('Please set/export the following environment variable: MS_GLOBAL_TRANSLATOR_TEXT_ACCESS_TOKEN_URL');
+if (!process.env.MS_TRANSLATOR_TEXT_BASE_URL)
+  throw new Error('Please set/export the following environment variable: MS_TRANSLATOR_TEXT_BASE_URL');
+
 // Connect to Mongo
-var mongo_uri = 'MONGO_URI';
-if (!process.env[mongo_uri]) throw new Error('Please set/export the following environment variable: ' + mongo_uri);
-mongoose.connect(process.env[mongo_uri], {
+mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
   useCreateIndex: true
