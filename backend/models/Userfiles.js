@@ -4,10 +4,12 @@ const Schema = mongoose.Schema;
 // Create Schema
 const UserfilesSchema = new Schema({
   data: {
-    type: Buffer
+    type: Buffer,
+    required: true
   },
   content_type: {
-    type: String
+    type: String,
+    required: true
   },
   file_name: {
     type: String,
