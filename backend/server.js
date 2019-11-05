@@ -18,7 +18,9 @@ app.use(fileUpload({
 app.use(cors());
 
 // Connect to Mongo
-mongoose.connect(process.env.MONGO_URI, {
+var mongo_uri = 'MONGO_URI';
+if (!process.env[mongo_uri]) throw new Error('Please set/export the following environment variable: ' + mongo_uri);
+mongoose.connect(process.env[mongo_uri], {
   useNewUrlParser: true,
   useUnifiedTopology: true,
   useCreateIndex: true
@@ -26,8 +28,8 @@ mongoose.connect(process.env.MONGO_URI, {
   .then(() => console.log('MongoDB connected...'))
   .catch(err => console.error(err));
 
-app.use('/api/translate/documents', checkJwt, documents);
-// app.use('/api/translate/documents', documents);
+// app.use('/api/translate/documents', checkJwt, documents);
+app.use('/api/translate/documents', documents);
 
 if (process.env.NODE_ENV === 'production') {
   //Static file declaration
