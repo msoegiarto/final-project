@@ -27,6 +27,9 @@ const UserfilesSchema = new Schema({
     trim: true,
     required: true
   },
+  char_length: {
+    type: Number
+  },
   is_active: {
     type: Boolean,
     default: true
