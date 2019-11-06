@@ -13,13 +13,16 @@ const router = new Router();
 const Users = require('../models/Users');
 const Userfiles = require('../models/Userfiles');
 
-// Environment variables
-const get_token_url = 'MS_GLOBAL_TRANSLATOR_TEXT_ACCESS_TOKEN_URL';
-if (!process.env[get_token_url])
-  throw new Error('Please set/export the following environment variable: ' + get_token_url);
-const translation_base_url = 'MS_TRANSLATOR_TEXT_BASE_URL';
-if (!process.env[translation_base_url])
-  throw new Error('Please set/export the following environment variable: ' + translation_base_url);
+// Timer
+const timer = {
+  constant: 600000,
+  time: 0,
+  token: '',
+};
+
+// Constant
+const CHARACTER_LIMIT_FOR_ONE_REQUEST = 4000;
+const CHARACTER_LIMIT_DELIMITER = '==========';
 
 /**
  * @GET /api/translate/documents
@@ -70,21 +73,38 @@ router.post('/translate', async (req, res, next) => {
 
     const uploadedFile = req.files.file; // file=what we define in react
 
-    const newFilename = await constructNewFilename(thisUser, uploadedFile.name, req.body.toLanguage);
+    const { fromLanguage, toLanguage } = req.body;
+
+    const newFilename = await constructNewFilename(thisUser, uploadedFile.name, toLanguage);
+
+    // read the file
+    const readfileResult = await readbufferTextPlain(uploadedFile.data);
+    const readfileResultTextArray = readfileResult.textArray;
+
+    // msTranslationRequests is a dictionary, it consists of at least 1 function call to the Translation API
+    const msTranslationRequests = msTransPrepareRequest(readfileResultTextArray, fromLanguage, toLanguage);
+
+    // send the request to the Translation API
+    const sendRequestFunction = Object.keys(msTranslationRequests);
+    let results = [];
+    for (let i = 0; i < sendRequestFunction.length; i++) {
+      const f1 = msTranslationRequests[sendRequestFunction[i]]();
+      results.push(await f1);
+    }
+
+    consolidateResponseArray(results);
+
+    // create a buffer
+    const buf = msTransCreateABufferFromResponseArr(results[0]);
 
     const thisFile = {
-      data: uploadedFile.data,
+      data: buf,
       content_type: 'text/plain',
       file_name: newFilename,
-      lang_from: req.body.fromLanguage,
-      lang_to: req.body.toLanguage
+      lang_from: fromLanguage,
+      lang_to: toLanguage,
+      char_length: readfileResult.totalCharLength
     };
-
-    //////////////////////////////////////////
-    //                                      //
-    // TODO: call the translation API here  //
-    //                                      //
-    //////////////////////////////////////////
 
     const savedUser = await saveFileAndRetrieveUserInfo(thisUser, thisFile);
 
@@ -184,10 +204,10 @@ const deleteFilesAndRetrieveUserInfo = async (inputUser, tobeDeletedFileIds) => 
   }
 
   // get latest data from user
-  const user = await findUserAndPopulateFiles(inputUser);
+  const userFound = await findUserAndPopulateFiles(inputUser);
   if (!userFound || !userFound._id) throw new Error({ message: 'User not found in the database' });
 
-  return user;
+  return userFound;
 }
 
 const saveUser = async (inputUser) => {
@@ -276,6 +296,7 @@ const _saveFile = async (userId, inputFile) => {
     file_name: inputFile.file_name,
     lang_from: inputFile.lang_from,
     lang_to: inputFile.lang_to,
+    char_length: inputFile.char_length,
     file_owner: userId
   });
 
@@ -323,17 +344,227 @@ const isFileFound = files => {
   return (files && files.file_name !== '');
 }
 
-const getMsTranslationToken = async () => {
+const readbufferTextPlain = (data) => {
+  console.log('[readbufferTextPlain] START');
 
-  const getToken = await axios({
-    method: 'POST',
-    url: process.env[get_token_url],
-    headers: { 'Ocp-Apim-Subscription-Key': process.env.MS_TRANSLATION_TEXT_SUBSCRIPTION_KEY },
-    data: ''
+  if (!data instanceof Buffer)
+    throw new Error('not a instanceof Buffer');
+
+  let totalCharLength = 0;
+  let textArray = [];
+  let counter = 1;
+
+  const dataArray = data.toString().split(/(?:\r\n|\r|\n)/g);
+
+  for (let i = 0; i < dataArray.length; i++) {
+    console.log(i, dataArray[i]);
+    if (!dataArray[i]) {
+      textArray.push({ 'Text': '' });
+      continue;
+    }
+
+    const lineArr = dataArray[i].split('.');
+
+    for (let j = 0; j < lineArr.length; j++) {
+      let text = lineArr[j].trim() ? lineArr[j] + '.' : '';
+
+      textArray.push({ 'Text': text });
+
+      totalCharLength += text.length;
+
+      if (totalCharLength >= (counter * CHARACTER_LIMIT_FOR_ONE_REQUEST)) {
+        textArray.push(CHARACTER_LIMIT_DELIMITER);
+        counter++;
+      }
+    }
+
+  }
+  console.log(totalCharLength);
+  console.log(textArray);
+  console.log('[readbufferTextPlain] END');
+  return {
+    totalCharLength,
+    textArray
+  };
+}
+
+const readfileTextPlain = async (file) => {
+  console.log('[readfileTextPlain] START');
+
+  let totalCharLength = 0;
+  let textArray = [];
+  let counter = 1;
+
+  // readline.Interface -> input is a stream
+  // Note: we use the crlfDelay option to recognize all instances of CR LF ('\r\n') in input.txt as a single line break.
+  const readInterface = readline.createInterface({
+    input: fs.createReadStream(file),
+    crlfDelay: Infinity
   });
 
-  console.log('getToken', getToken.data);
+  readInterface.on('line', function (line) {
 
+    if (line) {
+      const lineArr = line.split('.');
+
+      for (let i = 0; i < lineArr.length; i++) {
+        let text = lineArr[i].trim() ? lineArr[i] + '.' : '';
+
+        textArray.push({ 'Text': text });
+
+        totalCharLength += text.length;
+
+        if (totalCharLength >= (counter * CHARACTER_LIMIT_FOR_ONE_REQUEST)) {
+          textArray.push(CHARACTER_LIMIT_DELIMITER);
+          counter++;
+        }
+      }
+
+      textArray.push({ 'Text': '' });
+    }
+
+  });
+
+  await once(readInterface, 'close');
+
+  console.log('[readfileTextPlain] END');
+
+  return {
+    totalCharLength,
+    textArray
+  };
+}
+
+const msTransWriteAFileFromResponseArr = async (filename, inputArray) => {
+  console.log('[writeIntoFile] START');
+
+  const dir = path.join(__dirname, `../../test_file/${filename}`);
+
+  const stream = fs.createWriteStream(dir, { flags: 'w', encoding: 'utf8', emitClose: true });
+
+  stream.once('open', function (fd) {
+    let text = '';
+    for (let i = 0; i < inputArray.length; i++) {
+      const data = inputArray[i]['translations'][0]['text'];
+
+      if (!data || i === inputArray.length - 1) {
+        stream.write(text);
+        stream.write('\n');
+        text = '';
+      } else {
+        text += `${data}`;
+      }
+
+    }
+    stream.end();
+  });
+
+  await once(stream, 'close');
+  console.log('[writeIntoFile] END');
+}
+
+const msTransSendRequest = async (requestData, fromLanguage, toLanguage) => {
+  console.log('[msTransSendRequest] START');
+
+  // get the microsoft token 
+  const token = await getMsTranslationToken();
+
+  const translation_url = process.env.MS_TRANSLATOR_TEXT_BASE_URL + `&from=${fromLanguage}&to=${toLanguage}&textType=plain`;
+
+  const msTranslationResult = await axios({
+    method: 'POST',
+    url: translation_url,
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': `application/json` },
+    data: requestData
+  });
+  if (msTranslationResult.data.error) throw res.data.error;
+
+  console.log('[msTransSendRequest] END');
+  return msTranslationResult.data;
+}
+
+const msTransPrepareRequest = (inputArray, fromLanguage, toLanguage) => {
+
+  const sendRequestFunction = {};
+
+  // divide the 'inputArray' based on delimiter
+  // save the indices of the division
+  const indices = [];
+  let idx = inputArray.indexOf(CHARACTER_LIMIT_DELIMITER);
+  while (idx !== -1) {
+    indices.push(idx);
+    idx = inputArray.indexOf(CHARACTER_LIMIT_DELIMITER, idx + 1);
+  }
+  indices.push(inputArray.length);
+
+  // create a dictionary
+  // each element of the dictionary is a function
+  // example: { function_<index> : msTransSendRequest(args) }
+  for (let i = 0; i < indices.length; i++) {
+    let arrSliced = null;
+    if (i === 0) {
+      arrSliced = inputArray.slice(0, indices[i]);
+    } else {
+      arrSliced = inputArray.slice(indices[i - 1] + 1, indices[i]);
+    }
+    sendRequestFunction['function_' + i] = () => {
+      return msTransSendRequest(arrSliced, fromLanguage, toLanguage);
+    }
+  }
+
+  return sendRequestFunction;
+}
+
+const consolidateResponseArray = responseArray => {
+  // this function combines the elements of an array into one element, which is element[0]
+  if (responseArray.length <= 1) return;
+
+  responseArray[0] = [...responseArray[0], ...responseArray[1]];
+  delete responseArray[1];
+  responseArray.splice(1, 1);
+  consolidateResponseArray(responseArray);
+}
+
+const msTransCreateABufferFromResponseArr = strArr => {
+  let str = '';
+  for (let i = 0; i < strArr.length; i++) {
+    const data = strArr[i]['translations'][0]['text'];
+    if (!data || i === strArr.length - 1) {
+      str += '\n';
+    } else {
+      str += data;
+    }
+  }
+  return Buffer.from(str);
+}
+
+/**
+ * This function will return a ms translation token.
+ * The token will change every 10 minutes. 
+ */
+const getMsTranslationToken = async () => {
+  console.log('[getMsTranslationToken] START');
+
+  const _getToken = async () => {
+    const getToken = await axios({
+      method: 'POST',
+      url: process.env.MS_MEGA_TRANSLATOR_TEXT_ACCESS_TOKEN_URL,
+      headers: { 'Ocp-Apim-Subscription-Key': process.env.MS_TRANSLATION_TEXT_SUBSCRIPTION_KEY },
+      data: ''
+    });
+    return getToken.data;
+  }
+
+  const currentTime = Date.now();
+  const timeDiff = timer.time ? currentTime - timer.time : timer.constant;
+
+  if (timeDiff >= timer.constant) {
+    timer.token = await _getToken();
+    timer.time = currentTime;
+  }
+
+  console.log('[getMsTranslationToken] END');
+  return timer.token;
 }
 
 /**
@@ -389,76 +620,39 @@ router.post('/download_test', (req, res, next) => {
 
 });
 
+/**
+ * @POST /readline_localfile_test
+ * read a local file
+ * call third party api
+ * write into a newfile
+ */
 router.post('/readline_localfile_test', async (req, res, next) => {
   try {
-    const CHAR_COUNT_LIMIT_FOR_ONE_REQUEST = 4000;
-    let totalCharLength = 0;
-    let count = 0;
-    let textArray = [];
-    const countLimit = 50;
 
-    const dir = path.join(__dirname, `../../test_file/die_verwandlung.txt`);
+    const file = path.join(__dirname, `../../test_file/die_verwandlung.txt`);
 
-    // Note: we use the crlfDelay option to recognize all instances of CR LF ('\r\n') in input.txt as a single line break.
-    const readInterface = readline.createInterface({
-      input: fs.createReadStream(dir),
-      crlfDelay: Infinity
-      // output: process.stdout,
-      // console: false
-    });
+    // read the file
+    const readfileResult = await readfileTextPlain(file);
+    const readfileResultTextArray = readfileResult.textArray;
 
-    let string = '';
-    readInterface.on('line', function (line) {
-      let charLength = line.trim().split('').length;
-      count += charLength;
-      string += line;
+    // msTranslationRequests is a dictionary, it consists of at least 1 function call to the Translation API
+    const msTranslationRequests = msTransPrepareRequest(readfileResultTextArray, req.body.fromLanguage, req.body.toLanguage);
 
-      if (count + charLength >= countLimit) {
-        textArray.push({ 'Text': string });
-        string = '';
-        count = 0;
-      }
-
-      console.log('string:', string);
-      totalCharLength += charLength;
-    });
-
-    await once(readInterface, 'close');
-
-    textArray.forEach((element, index) => {
-      console.log('index', index, ':', element);
-    });
-
-    const get_token_url = 'MS_GLOBAL_TRANSLATOR_TEXT_ACCESS_TOKEN_URL';
-    if (!process.env[get_token_url])
-      throw new Error('Please set/export the following environment variable: ' + get_token_url);
-
-    const getToken = await axios({
-      method: 'POST',
-      url: process.env[get_token_url],
-      headers: { 'Ocp-Apim-Subscription-Key': process.env.MS_TRANSLATION_TEXT_SUBSCRIPTION_KEY },
-      data: ''
-    });
-
-    console.log('getToken', getToken.data);
-
-    const translation_url = process.env[translation_base_url] + `&from=${req.body.fromLanguage}&to=${req.body.toLanguage}&textType=plain`;
-
-    const res = await axios({
-      method: 'POST',
-      url: translation_url,
-      headers: { 'Authorization': `Bearer ${getToken.data}`, 'Content-Type': `application/json` },
-      data: textArray
-    });
-
-    if (res.data.error) {
-      throw res.data.error;
-    } else {
-      console.log(res.data[0].translations);
-      console.log(res.data[0].translations[0].text);
+    // send the request to the Translation API
+    const sendRequestFunction = Object.keys(msTranslationRequests);
+    let results = [];
+    for (let i = 0; i < sendRequestFunction.length; i++) {
+      const f1 = msTranslationRequests[sendRequestFunction[i]]();
+      results.push(await f1);
     }
 
-    res.json({ totalCharLength: totalCharLength, text: res.data[0].translations[0].text });
+    // consolidate the array of response, so that the array only have one element, which is element[0]
+    consolidateResponseArray(results);
+
+    // write the file
+    await msTransWriteAFileFromResponseArr('newfile.txt', results[0]);
+
+    res.json({ totalCharLength: readfileResult.totalCharLength });
 
   } catch (err) {
     console.error(err);
