@@ -147,6 +147,10 @@ router.post('/download', async (req, res, next) => {
   if (!tobeDownloadedFileIds || tobeDownloadedFileIds.length === 0)
     return res.status(400).json({ err: 'no file to be downloaded' });
 
+  const nickname = req.body.nickname;
+  if (!nickname)
+    return res.status(400).json({ err: 'no nickname sent' });
+
   try {
     if (tobeDownloadedFileIds.length === 1) {
       const fileId = tobeDownloadedFileIds[0].id;
@@ -171,11 +175,15 @@ router.post('/download', async (req, res, next) => {
         dataFolder.file(`${file.file_name}`, fileData);
       }
 
+      const date = new Date();
+      const formattedDate = date.toLocaleDateString().replace(/\//g, '-');
+      const zipFilename = `${nickname}_translation_${formattedDate}`;
+      
       zip.generateAsync({ type: 'nodebuffer' })
         .then((content) => {
           res.set({
             'Content-Type': 'text/plain',
-            'Content-Disposition': `attachment;filename=${Date.now()}.zip`,
+            'Content-Disposition': `attachment;filename=${zipFilename}.zip`,
           });
           return res.send(Buffer.from(content, 'binary'));
         });
@@ -185,7 +193,6 @@ router.post('/download', async (req, res, next) => {
     res.status(500).json({ err });
     next(err);
   }
-
 });
 
 const deleteFilesAndRetrieveUserInfo = async (inputUser, tobeDeletedFileIds) => {
@@ -194,8 +201,8 @@ const deleteFilesAndRetrieveUserInfo = async (inputUser, tobeDeletedFileIds) => 
     await Users.updateOne(
       {},
       {
-        "$pull": {
-          "user_files": new ObjectId(tobeDeletedFileIds[i].id)
+        '$pull': {
+          'user_files': new ObjectId(tobeDeletedFileIds[i].id)
         }
       }
     );

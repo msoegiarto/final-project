@@ -1,5 +1,5 @@
-const jwt = require("express-jwt");
-const jwksRsa = require("jwks-rsa");
+const jwt = require('express-jwt');
+const jwksRsa = require('jwks-rsa');
 
 // Auth0 configuration
 const authConfig = {
@@ -18,7 +18,7 @@ const checkJwt = jwt({
 
   audience: authConfig.audience,
   issuer: `https://${authConfig.domain}/`,
-  algorithm: ["RS256"]
+  algorithm: ['RS256']
 });
 
 module.exports = checkJwt;
