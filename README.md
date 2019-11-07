@@ -28,6 +28,12 @@ This is a webapp that let the user to upload a file and download the translated 
 
 # Built with
 
+__API__
+
+[Microsoft Translator](https://www.microsoft.com/en-us/translator/)
+
+__Library__
+
 [express](https://expressjs.com/)
 
 [express-cors](https://github.com/expressjs/cors)
@@ -37,6 +43,8 @@ This is a webapp that let the user to upload a file and download the translated 
 [dotenv](https://github.com/motdotla/dotenv)
 
 [jszip](https://stuk.github.io/jszip/)
+
+[mongoDB](https://www.mongodb.com/)
 
 [mongoose](https://mongoosejs.com/)
 
