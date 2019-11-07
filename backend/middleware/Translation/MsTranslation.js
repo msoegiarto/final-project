@@ -321,18 +321,19 @@ class MsTranslation {
   constructor() { }
 
   /**
- * @function translate
- * @description divide the texts into multiple requests based on character limit
- * @param {Buffer|Object} data - data with type of Buffer
- * @param {string} fromLanguage - original language
- * @param {string} toLanguage - target language
- * @returns {Promise<Object>} totalCharLength<number> and textArray<string[]>
- */
+   * @async
+   * @function translate
+   * @description divide the texts into multiple requests based on character limit
+   * @param {Buffer|Object} data - data with type of Buffer
+   * @param {string} fromLanguage - original language
+   * @param {string} toLanguage - target language
+   * @returns {Promise<Object>} totalCharLength<number> and textArray<string[]>
+   */
   async translate(data, fromLanguage, toLanguage) {
     const readfileResult = data instanceof Buffer ? _constructRequestData(data) : data;
 
     if (!readfileResult || !readfileResult.textArray || readfileResult.textArray.length === 0)
-      throw new Error('[MsTranslation.js :334] something went wrong');
+      throw new Error('[MsTranslation.js] something went wrong');
 
     const requests = _constructRequest(readfileResult.textArray, fromLanguage, toLanguage);
     const responseArray = await _sendRequest(requests);
@@ -341,24 +342,26 @@ class MsTranslation {
   }
 
   /**
- * @function readPlainTextFile
- * @description read from local file, plain/text
- * @param {string} filepath - example: '../../test_file'
- * @param {string} filename - example: 'filename.txt'
- * @returns {Promise<Object>} totalCharLength<number> and textArray<string[]>
- */
+   * @async
+   * @function readPlainTextFile
+   * @description read from local file, plain/text
+   * @param {string} filepath - example: '../../test_file'
+   * @param {string} filename - example: 'filename.txt'
+   * @returns {Promise<Object>} totalCharLength<number> and textArray<string[]>
+   */
   async readPlainTextFile(filepath, filename) {
     const readfileResult = await _readPlainTextFile(filepath, filename);
     return new Promise(resolve => resolve({ totalCharLength: readfileResult.totalCharLength, textArray: readfileResult.textArray }));
   }
 
   /**
- * @function writeFile
- * @description write an array of text into a physical file
- * @param {string} filepath - example: '../../test_file'
- * @param {string} filename - example: 'filename.txt'
- * @param {Array.<string>} textArray
- */
+   * @async
+   * @function writeFile
+   * @description write an array of text into a physical file
+   * @param {string} filepath - example: '../../test_file'
+   * @param {string} filename - example: 'filename.txt'
+   * @param {Array.<string>} textArray
+   */
   async writeFile(filepath, filename, textArray) {
     await _writeFile(filepath, filename, textArray);
   }
