@@ -61,7 +61,7 @@ const getConfig = async (context, contentType) => {
   return {
     headers: {
       'Content-Type': contentType,
-      'Authorization': `Bearer ${accessToken}`
+      Authorization: `Bearer ${accessToken}`
     }
   };
 }
@@ -71,7 +71,8 @@ const getUser = context => {
 
   return {
     email: user.email,
-    authentication: user.sub
+    authentication: user.sub,
+    nickname: user.nickname,
   };
 }
 
@@ -100,8 +101,8 @@ class Documents extends React.Component {
     const user = getUser(this.context);
 
     try {
-      const res = await axios.post(`/api/translate/documents/`, user, config);
-      console.log('#####', res.data);
+      const res = await axios.post(`/api/translate/documents`, user, config);
+
       if (res.data.translatedFiles) {
         this.setState(prevState => ({
           ...prevState,
@@ -173,7 +174,6 @@ class Documents extends React.Component {
 
     try {
       const res = await axios.post(`/api/translate/documents/translate`, formData, config);
-      console.log('onClickTranslate', res.data);
 
       this.setState(prevState => ({
         ...prevState,
@@ -192,6 +192,7 @@ class Documents extends React.Component {
   onClickDownload = async (id) => {
     console.log('onClickDownload', id);
     const config = await getConfig(this.context, 'application/json');
+    const user = getUser(this.context);
 
     const data = {};
     if (id === 'ALL') {
@@ -200,22 +201,23 @@ class Documents extends React.Component {
         tobeDownloadedFileIds.push({ id: element.id });
       });
       data.translatedFiles = tobeDownloadedFileIds;
-      this.setState({ files: null });
+      // this.setState({ files: null });
     } else {
       data.translatedFiles = [{ id: id }];
     }
+    data.nickname = user.nickname;
 
     try {
       const res = await axios({
-        url: `/api/translate/documents/download`,
-        method: `POST`,
+        url: '/api/translate/documents/download',
+        method: 'POST',
         headers: config.headers,
-        responseType: `blob`,
+        responseType: 'blob',
         data: data
       });
 
       const contentDisposition = res.headers['content-disposition'];
-      const startIndex = contentDisposition.indexOf("filename=") + 9;
+      const startIndex = contentDisposition.indexOf('filename=') + 9;
       const endIndex = contentDisposition.length;
       const filename = contentDisposition.substring(startIndex, endIndex);
 
@@ -291,7 +293,7 @@ class Documents extends React.Component {
         <Fragment>
           {
             this.state.isSuccess &&
-            <Message text={'Success.'} cStyle={'success'} />
+            <Message text={'The file has been successfully translated.'} cStyle={'success'} />
           }
         </Fragment>
         <Fragment>

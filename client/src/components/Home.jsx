@@ -7,7 +7,7 @@ import CardMedia from '@material-ui/core/CardMedia';
 import Typography from '@material-ui/core/Typography';
 import image2 from '../images/marie-bellando-mitjans-cBChXxQqEKM-unsplash.jpg';
 
-const useStyles = makeStyles({
+const useStyles = makeStyles(theme => ({
   card: {
     maxWidth: '100vw',
     maxHeight: '92vh',
@@ -20,9 +20,11 @@ const useStyles = makeStyles({
   myText: {
     position: 'absolute',
     top: '20vh',
-    left: '5vw',
+    [theme.breakpoints.up('md')]: {
+      left: '5vw',
+    },
   }
-});
+}));
 
 const Home = () => {
   const classes = useStyles();
