@@ -41,7 +41,8 @@ This is a webapp that let the user to upload a file and download the translated 
 
 __System table__
 
-|                   translations                    |
+table name = translations
+| columns               | type     | constraints    |
 | ------------------------------------------------- |
 | _id                   | objectId | PK             |
 | name                  |   string | NN, U          |
