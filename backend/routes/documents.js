@@ -368,33 +368,6 @@ router.post('/save_test', (req, res, next) => {
 });
 
 /**
- * @POST /api/translate/documents/download_test
- * test zipping one file
- */
-router.post('/download_test', (req, res, next) => {
-  const tobeDownloadedFileIds = req.body.translatedFiles;
-
-  const fileId = tobeDownloadedFileIds[0].id;
-  Userfiles.findById(fileId).exec((err, file) => {
-    if (err) throw err;
-    const fileData = file.data;
-    // zip the file
-    const zip = new JSZip();
-    const dataFolder = zip.folder('translatedfiles');
-    dataFolder.file(`${file.file_name}`, fileData);
-    zip.generateAsync({ type: 'nodebuffer' })
-      .then((content) => {
-        res.set({
-          'Content-Type': 'text/plain',
-          'Content-Disposition': `attachment;filename=${file.file_name}.zip`,
-        });
-        return res.send(Buffer.from(content, 'binary'));
-      });
-  });
-
-});
-
-/**
  * @POST /readline_localfile_test
  * read a local file
  * call third party api

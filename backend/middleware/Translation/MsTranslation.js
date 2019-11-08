@@ -16,13 +16,9 @@ const CHARACTER_LIMIT_DELIMITER = '||';
  * @typedef {Object} MsTextRequest
  * @property {string} Text 
  * 
- * @typedef MsRequestData
+ * @typedef {Object} MsRequestData
  * @property {number} totalCharLength
  * @property {Array.<MsTextRequest>} textArray
- * 
- * @typedef {Object} TokenAndBaseUrl
- * @property {string} token 
- * @property {string} baseUrl 
  * 
  * @typedef {Object} MsText
  * @property {string} text 
@@ -86,7 +82,7 @@ const _constructRequestData = (data) => {
 const _getNewToken = async () => {
   const getToken = await axios({
     method: 'POST',
-    url: process.env.MS_GLOBAL_TRANSLATOR_TEXT_ACCESS_TOKEN_URL,
+    url: process.env.MS_TRANSLATION_TEXT_ACCESS_TOKEN_URL,
     headers: { 'Ocp-Apim-Subscription-Key': process.env.MS_TRANSLATION_TEXT_SUBSCRIPTION_KEY },
     data: ''
   });
@@ -95,21 +91,22 @@ const _getNewToken = async () => {
 
 /**
  * @async
- * @function _getTranslationTokenAndBaseUrl
+ * @function _getTranslationToken
  * @description Time the generation of new token
- * @returns {TokenAndBaseUrl} token and baseUrl
+ * @returns {string} token
  */
-const _getTranslationTokenAndBaseUrl = async () => {
-  console.log('[_getTranslationTokenAndBaseUrl] START');
+const _getTranslationToken = async () => {
+  console.log('[_getTranslationToken] START');
 
-  const result = {};
+  let token = null;
 
-  const translations = await Translations.findOne({ name: TRANSLATOR_NAME });
-  if (!translations || !translations.name)
-    throw new Error('Could not find the record of ' + TRANSLATOR_NAME + ' in the database');
+  let translations = await Translations.findOne({ name: TRANSLATOR_NAME });
+  if (!translations || !translations.name) {
+    const newTranslationRecord = new Translations({ name: TRANSLATOR_NAME });
+    translations = await newTranslationRecord.save({});
+  }
 
-  result.token = translations.token;
-  result.baseUrl = translations.base_url;
+  token = translations.token;
   const prevTime = translations.time_last_requested;
   const intervalTime = translations.time_interval;
 
@@ -118,22 +115,22 @@ const _getTranslationTokenAndBaseUrl = async () => {
 
   if (timeDiff >= intervalTime) {
     // get a new token
-    result.token = await _getNewToken();
+    token = await _getNewToken();
 
     // update the record
     await Translations.updateOne(
       { _id: translations._id },
       {
         $set: {
-          token: result.token,
+          token: token,
           time_last_requested: currentTime
         }
       }
     );
   }
 
-  console.log('[_getTranslationTokenAndBaseUrl] END');
-  return result;
+  console.log('[_getTranslationToken] END');
+  return token;
 }
 
 /**
@@ -148,13 +145,15 @@ const _getTranslationTokenAndBaseUrl = async () => {
 const _constructSendRequest = async (requestData, fromLanguage, toLanguage) => {
   console.log('[_constructSendRequest] START');
 
-  // get the microsoft token and baseUrl
-  const translationTokenAndUrl = await _getTranslationTokenAndBaseUrl();
+  // get the microsoft token
+  const token = await _getTranslationToken();
+
+  const url = process.env.MS_TRANSLATION_TEXT_BASE_URL + `&from=${fromLanguage}&to=${toLanguage}&textType=plain`;
 
   const msTranslationResult = await axios({
     method: 'POST',
-    url: `${translationTokenAndUrl.baseUrl}&from=${fromLanguage}&to=${toLanguage}&textType=plain`,
-    headers: { 'Authorization': `Bearer ${translationTokenAndUrl.token}`, 'Content-Type': `application/json` },
+    url: url,
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     data: requestData
   });
   if (msTranslationResult.data.error) throw res.data.error;
@@ -306,7 +305,7 @@ const _writeFile = async (filepath, filename, textArray) => {
 
         text = '';
       } else {
-        text += `${data}`;
+        text += data;
       }
 
     }
