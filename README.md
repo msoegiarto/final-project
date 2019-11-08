@@ -42,13 +42,14 @@ This is a webapp that let the user to upload a file and download the translated 
 __System table__
 
 table name = translations
-| columns               | type     | constraints    |
-| ------------------------------------------------- |
-| _id                   | objectId | PK             |
-| name                  |   string | NN, U          |
-| time_interval         |   number | default 590000 |
-| time_last_requested   |   number | default 0      |
-| token                 |   string | default ''     |
+
+| columns               | type     | constraints    | 
+| --------------------- | -------- | -------------- | 
+| _id                   | objectId | PK             | 
+| name                  |   string | NN, U          | 
+| time_interval         |   number | default 590000 | 
+| time_last_requested   |   number | default 0      | 
+| token                 |   string | default ''     | 
 
 # Built with
 
