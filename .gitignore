@@ -61,6 +61,8 @@ typings/
 # dotenv environment variables file
 .env
 
+auth_config.json
+
 keys.js
 yarn.lock
 .DS_Store

@@ -6,16 +6,10 @@ This is a webapp that let the user to upload a file and download the translated 
 
 1.  Fork and clone the repo
 
-2.  Install the dependencies
-
-    Server: `npm install`
-    
-    Client: `npm run client-install`
-
-3.  Create a `.env` file in the root folder
+2.  Create a `.env` file in the root folder
 
     ```
-    AUTH0_DOMAIN=<your_auth0_domain>
+    AUTH0_DOMAIN=<your_auth0_domain>.auth0.com
     AUTH0_AUDIENCE=<your_auth0_audience>
 
     MONGO_URI=mongodb://<host>:<port>/<database_name>
@@ -25,7 +19,23 @@ This is a webapp that let the user to upload a file and download the translated 
     MS_TRANSLATION_TEXT_BASE_URL=<microsoft_translation_api_endpoint>
     ```
 
-4.  Run the application
+3. Create a file `auth_config.json` in client/src/auth0/
+
+    ```
+    {
+      "domain": "<your_auth0_domain>.auth0.com",
+      "clientId": "<your_auth0_client_id>",
+      "audience": "<https://yourauth0api>"
+    }
+    ```
+
+4.  Install the dependencies
+
+    Server: `npm install`
+    
+    Client: `npm run client-install`
+
+5.  Run the application
 
     Server: `npm run server`
 
