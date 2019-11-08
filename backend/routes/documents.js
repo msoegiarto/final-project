@@ -26,17 +26,17 @@ router.get('/', (req, res, next) => {
  */
 router.post('/', async (req, res, next) => {
   try {
-    const thisUser = getUserFromRequest(req);
-    const userFound = await findUserAndPopulateFiles(thisUser);
+    const thisUser = _getUserFromRequest(req);
+    const userFound = await _findUserAndPopulateFiles(thisUser);
 
     const returnValue = {};
 
     if (!(userFound && userFound.email && userFound.authentication)) {
-      await saveUser(thisUser);
+      await _saveUser(thisUser);
       returnValue.msg = `user saved`;
       returnValue.translatedFiles = [];
     } else {
-      const translatedFiles = getTranslatedFiles(userFound.user_files);
+      const translatedFiles = _getTranslatedFiles(userFound.user_files);
       returnValue.msg = translatedFiles.length > 0 ? `user has files` : `user has no files`;
       returnValue.translatedFiles = translatedFiles;
     }
@@ -54,7 +54,7 @@ router.post('/', async (req, res, next) => {
  */
 router.post('/translate', async (req, res, next) => {
   try {
-    const thisUser = getUserFromRequest(req);
+    const thisUser = _getUserFromRequest(req);
 
     if (!req.files || !req.files.file) throw new Error('No file uploaded');
 
@@ -62,11 +62,11 @@ router.post('/translate', async (req, res, next) => {
 
     const { fromLanguage, toLanguage } = req.body;
 
-    const newFilename = await constructNewFilename(thisUser, uploadedFile.name, toLanguage);
+    const newFilename = await _constructNewFilename(thisUser, uploadedFile.name, toLanguage);
 
     const translationResultArray = await msTranslation.translate(uploadedFile.data, fromLanguage, toLanguage);
 
-    const buf = createBufferFromTextArray(translationResultArray.textArray);
+    const buf = _createBufferFromTextArray(translationResultArray.textArray);
 
     const thisFile = {
       data: buf,
@@ -77,9 +77,9 @@ router.post('/translate', async (req, res, next) => {
       char_length: translationResultArray.totalCharLength
     };
 
-    const savedUser = await saveFileAndRetrieveUserInfo(thisUser, thisFile);
+    const savedUser = await _saveFileAndRetrieveUserInfo(thisUser, thisFile);
 
-    const translatedFiles = getTranslatedFiles(savedUser.user_files);
+    const translatedFiles = _getTranslatedFiles(savedUser.user_files);
 
     return res.json({ translatedFiles });
   } catch (err) {
@@ -98,9 +98,11 @@ router.delete('/delete', async (req, res, next) => {
     return res.status(400).json({ err: 'no files to be deleted' });
 
   try {
-    const thisUser = getUserFromRequest(req);
-    const userFound = await deleteFilesAndRetrieveUserInfo(thisUser, tobeDeletedFileIds);
-    const translatedFiles = getTranslatedFiles(userFound.user_files);
+    const thisUser = _getUserFromRequest(req);
+    const userFound = await _deleteFilesAndRetrieveUserInfo(thisUser, tobeDeletedFileIds);
+    const translatedFiles = _getTranslatedFiles(userFound.user_files);
+
+    console.log(translatedFiles);
 
     return res.json({ msg: 'files deleted', translatedFiles });
   } catch (err) {
@@ -166,7 +168,7 @@ router.post('/download', async (req, res, next) => {
   }
 });
 
-const deleteFilesAndRetrieveUserInfo = async (inputUser, tobeDeletedFileIds) => {
+const _deleteFilesAndRetrieveUserInfo = async (inputUser, tobeDeletedFileIds) => {
   for (let i = 0; i < tobeDeletedFileIds.length; i++) {
     // remove the file reference on the user record
     await Users.updateOne(
@@ -182,21 +184,21 @@ const deleteFilesAndRetrieveUserInfo = async (inputUser, tobeDeletedFileIds) => 
   }
 
   // get latest data from user
-  const userFound = await findUserAndPopulateFiles(inputUser);
+  const userFound = await _findUserAndPopulateFiles(inputUser);
   if (!userFound || !userFound._id) throw new Error({ message: 'User not found in the database' });
 
   return userFound;
 }
 
-const saveUser = async (inputUser) => {
+const _saveUser = async (inputUser) => {
   const newUser = new Users(inputUser);
   const savedUser = await newUser.save({});
   return savedUser;
 }
 
-const saveFileAndRetrieveUserInfo = async (inputUser, inputFile) => {
+const _saveFileAndRetrieveUserInfo = async (inputUser, inputFile) => {
 
-  const userFound = await findUserAndPopulateFiles(inputUser);
+  const userFound = await _findUserAndPopulateFiles(inputUser);
   if (!userFound || !userFound._id) throw new Error({ message: 'User not found in the database' });
 
   const fileSaved = await _saveFile(userFound._id, inputFile);
@@ -211,7 +213,7 @@ const saveFileAndRetrieveUserInfo = async (inputUser, inputFile) => {
 
 }
 
-const constructNewFilename = async (inputUser, oldName, toLang) => {
+const _constructNewFilename = async (inputUser, oldName, toLang) => {
 
   const nameArray = oldName.split('.');
   const ext = nameArray.pop();
@@ -237,7 +239,7 @@ const _getNewFilenameNoExt = async (inputUser, filename) => {
     .findOne({ file_owner: user._id, file_name: { $regex: '.*' + filename + '.*' } })
     .sort({ create_date: 'desc' });
 
-  if (isFileFound(fileFound)) {
+  if (_isFileFound(fileFound)) {
     // remove extension
     const filenameArr = fileFound.file_name.split('.');
     filenameArr[filenameArr.length - 1] = null;
@@ -260,7 +262,7 @@ const _getNewFilenameNoExt = async (inputUser, filename) => {
   return filename;
 }
 
-const findUserAndPopulateFiles = async (inputUser) => {
+const _findUserAndPopulateFiles = async (inputUser) => {
   const user = await Users.findOne(inputUser)
     .populate('user_files')
     .exec();
@@ -282,10 +284,10 @@ const _saveFile = async (userId, inputFile) => {
   return savedFile;
 }
 
-const getTranslatedFiles = userFiles => {
+const _getTranslatedFiles = userFiles => {
   const translatedFiles = [];
 
-  if (isFileFound(userFiles)) {
+  if (_isFileFound(userFiles)) {
     userFiles.forEach(element => {
       let newObj = {
         id: element._id,
@@ -300,7 +302,7 @@ const getTranslatedFiles = userFiles => {
   return translatedFiles;
 }
 
-const getUserFromRequest = req => {
+const _getUserFromRequest = req => {
   let errMessage = '';
   if (!req.body.email) errMessage += 'User email';
   if (!req.body.authentication) errMessage += errMessage ? ' and authentication' : 'User authentication';
@@ -315,7 +317,7 @@ const getUserFromRequest = req => {
   };
 }
 
-const isFileFound = files => {
+const _isFileFound = files => {
   if (Array.isArray(files)) {
     return (files.length > 0);
   }
@@ -323,12 +325,12 @@ const isFileFound = files => {
 }
 
 /**
- * @function createBufferFromTextArray
+ * @function _createBufferFromTextArray
  * @description create a buffer from an array of string
  * @param {Array.<string>} textArray - an array of string
  * @returns {Buffer} data with the type of Buffer
  */
-const createBufferFromTextArray = textArray => {
+const _createBufferFromTextArray = textArray => {
   let str = '';
   for (let i = 0; i < textArray.length; i++) {
     const data = textArray[i];
@@ -345,43 +347,59 @@ const createBufferFromTextArray = textArray => {
  * @POST /api/translate/documents/save_test
  * 
  */
-router.post('/save_test', (req, res, next) => {
-  if (req.files === null) {
-    return res.status(400).json({ msg: `No file uploaded` });
+router.post('/save_test', async (req, res, next) => {
+  try {
+    const thisUser = _getUserFromRequest(req);
+
+    if (!req.files || !req.files.file) throw new Error('No file uploaded');
+
+    const uploadedFile = req.files.file; // file=what we define in react
+
+    const { fromLanguage, toLanguage } = req.body;
+
+    const newFilename = await _constructNewFilename(thisUser, uploadedFile.name, toLanguage);
+
+    // do word count and construct array
+    const translationResultArray = msTranslation.constructRequestDataFromBuffer(uploadedFile.data);
+
+    const buf = _createBufferFromTextArray(translationResultArray.textArray);
+
+    const thisFile = {
+      data: buf,
+      content_type: 'text/plain',
+      file_name: newFilename,
+      lang_from: fromLanguage,
+      lang_to: toLanguage,
+      char_length: translationResultArray.totalCharLength
+    };
+
+    const savedUser = await _saveFileAndRetrieveUserInfo(thisUser, thisFile);
+
+    const translatedFiles = _getTranslatedFiles(savedUser.user_files);
+
+    res.json({ translatedFiles });
+
+  } catch (err) {
+    console.error(err);
+    res.json({ err: 'something went wrong' });
   }
-
-  const fromLanguage = req.body.from;
-  const toLanguage = req.body.to;
-  console.log(fromLanguage, toLanguage);
-
-  const uploadedFile = req.files.file; // file=what we define in react
-
-  const dir = path.join(__dirname, `../../client/public/uploads/${uploadedFile.name}`);
-  uploadedFile.mv(dir, err => {
-    if (err) {
-      console.error(err);
-      return res.status(500).send(err);
-    }
-  });
-
-  res.json({ msg: `POST /api/translate/documents`, fileName: uploadedFile.name, filePath: `/uploads/${uploadedFile.name}` });
 });
 
 /**
- * @POST /readline_localfile_test
+ * @POST /translate_test
  * read a local file
  * call third party api
  * write into a newfile
  */
-router.post('/readline_localfile_test', async (req, res, next) => {
+router.post('/translate_test', async (req, res, next) => {
   try {
 
-    // read the file
+    // read the file from local directory
     const readfileResult = await msTranslation.readPlainTextFile('../../test_file', 'a_spanish_text.txt');
 
     const result = await msTranslation.translate(readfileResult, req.body.fromLanguage, req.body.toLanguage);
 
-    // write the file
+    // write the file to local directory
     await msTranslation.writeFile('../../test_file', 'newfile.txt', result.textArray);
 
     res.json({ totalCharLength: result.totalCharLength });

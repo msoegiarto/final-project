@@ -364,6 +364,15 @@ class MsTranslation {
   async writeFile(filepath, filename, textArray) {
     await _writeFile(filepath, filename, textArray);
   }
+
+  constructRequestDataFromBuffer(data) {
+    if (!(data instanceof Buffer))
+      throw new Error('input is not an instance of Buffer');
+
+    const readfileResult = _constructRequestData(data);
+
+    return { totalCharLength: readfileResult.totalCharLength, textArray: readfileResult.textArray };
+  }
 }
 
 module.exports = MsTranslation;

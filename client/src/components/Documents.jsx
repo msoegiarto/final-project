@@ -174,6 +174,7 @@ class Documents extends React.Component {
 
     try {
       const res = await axios.post(`/api/translate/documents/translate`, formData, config);
+      // const res = await axios.post(`/api/translate/documents/save_test`, formData, config);
 
       this.setState(prevState => ({
         ...prevState,
@@ -255,6 +256,7 @@ class Documents extends React.Component {
       this.setState({ files: null });
     } else {
       data.translatedFiles = [{ id: id }];
+      this.setState({ translatedFiles: [] });
     }
 
     try {
@@ -270,6 +272,7 @@ class Documents extends React.Component {
         isSuccess: false,
         translatedFiles: res.data.translatedFiles
       }));
+
     } catch (error) {
       console.error(error);
     }
