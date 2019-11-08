@@ -10,18 +10,15 @@ const TranslationSchema = new Schema({
   },
   time_interval: {
     type: Number,
-    default: 600000
+    default: 590000
   },
   time_last_requested: {
     type: Number,
     default: 0
   },
-  base_url: {
-    type: String,
-    required: true
-  },
   token: {
     type: String,
+    default: ''
   },
 });
 
