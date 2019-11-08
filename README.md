@@ -12,7 +12,20 @@ This is a webapp that let the user to upload a file and download the translated 
     
     Client: `npm run client-install`
 
-3.  Run the application
+3.  Create a `.env` file in the root folder
+
+    ```
+    AUTH0_DOMAIN=<your_auth0_domain>
+    AUTH0_AUDIENCE=<your_auth0_audience>
+
+    MONGO_URI=mongodb://<host>:<port>/<database_name>
+
+    MS_TRANSLATION_TEXT_SUBSCRIPTION_KEY=<your_microsoft_translation_api_key>
+    MS_TRANSLATION_TEXT_ACCESS_TOKEN_URL=<your_microsoft_access_token_url>
+    MS_TRANSLATION_TEXT_BASE_URL=<microsoft_translation_api_endpoint>
+    ```
+
+4.  Run the application
 
     Server: `npm run server`
 
@@ -25,6 +38,18 @@ This is a webapp that let the user to upload a file and download the translated 
 # Data Model
 
 ![data_model](./images/ERD.png)
+
+__System table__
+
+table name = translations
+
+| columns               | type     | constraints    | 
+| --------------------- | -------- | -------------- | 
+| _id                   | objectId | PK             | 
+| name                  |   string | NN, U          | 
+| time_interval         |   number | default 590000 | 
+| time_last_requested   |   number | default 0      | 
+| token                 |   string | default ''     | 
 
 # Built with
 
