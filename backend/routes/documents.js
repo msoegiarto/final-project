@@ -53,6 +53,7 @@ router.post('/', async (req, res, next) => {
  * 
  */
 router.post('/translate', async (req, res, next) => {
+  console.log('@@@@@');
   try {
     const thisUser = _getUserFromRequest(req);
 
@@ -101,8 +102,6 @@ router.delete('/delete', async (req, res, next) => {
     const thisUser = _getUserFromRequest(req);
     const userFound = await _deleteFilesAndRetrieveUserInfo(thisUser, tobeDeletedFileIds);
     const translatedFiles = _getTranslatedFiles(userFound.user_files);
-
-    console.log(translatedFiles);
 
     return res.json({ msg: 'files deleted', translatedFiles });
   } catch (err) {
@@ -376,6 +375,15 @@ router.post('/save_test', async (req, res, next) => {
     const savedUser = await _saveFileAndRetrieveUserInfo(thisUser, thisFile);
 
     const translatedFiles = _getTranslatedFiles(savedUser.user_files);
+
+    await new Promise((resolve, reject) => {
+      setTimeout(() => {
+        console.log('wait!');
+        resolve();
+      }, 5000);
+    });
+
+    console.log('return');
 
     res.json({ translatedFiles });
 
