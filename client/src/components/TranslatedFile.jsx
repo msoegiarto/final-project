@@ -89,14 +89,26 @@ class TranslatedFile extends React.Component {
         </div>
         <div className={classes.details}>
           <CardActions>
-            <Button variant="outlined" size="medium" className={classes.deleteBtn} startIcon={<DeleteOutlinedIcon color="inherit" />} onClick={this.onClickDelete}>
+            <Button
+              variant="outlined"
+              size="medium"
+              className={classes.deleteBtn}
+              startIcon={<DeleteOutlinedIcon color="inherit" />}
+              onClick={this.onClickDelete}
+              disabled={this.props.isDisabled}>
               Delete
               </Button>
           </CardActions>
         </div>
         <div className={classes.details}>
           <CardActions>
-            <Button variant="outlined" size="medium" className={classes.downloadBtn} startIcon={<CloudDownloadOutlinedIcon color="inherit" />} onClick={this.onClickDownload}>
+            <Button
+              variant="outlined"
+              size="medium"
+              className={classes.downloadBtn}
+              startIcon={<CloudDownloadOutlinedIcon color="inherit" />}
+              onClick={this.onClickDownload}
+              disabled={this.props.isDisabled}>
               Download
               </Button>
           </CardActions>
