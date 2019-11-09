@@ -91,6 +91,7 @@ class Documents extends React.Component {
       toLanguagesList: [],
       translatedFiles: [],
       isSuccess: false,
+      isDisabled: false
     }
   }
 
@@ -101,7 +102,7 @@ class Documents extends React.Component {
     const user = getUser(this.context);
 
     try {
-      const res = await axios.post(`/api/translate/documents`, user, config);
+      const res = await axios.post('/api/translate/documents', user, config);
 
       if (res.data.translatedFiles) {
         this.setState(prevState => ({
@@ -157,6 +158,7 @@ class Documents extends React.Component {
     this.setState(oldState => ({
       ...oldState,
       isSuccess: false,
+      isDisabled: !oldState.isDisabled
     }));
 
     const config = await getConfig(this.context, 'multipart/form-data');
@@ -173,8 +175,27 @@ class Documents extends React.Component {
     });
 
     try {
-      const res = await axios.post(`/api/translate/documents/translate`, formData, config);
-      // const res = await axios.post(`/api/translate/documents/save_test`, formData, config);
+      const res = await axios({
+        url: '/api/translate/documents/translate',
+        method: 'POST',
+        headers: config.headers,
+        data: formData,
+      });
+      // const res = await axios({
+      //   url: '/api/translate/documents/save_test',
+      //   method: 'POST',
+      //   headers: config.headers,
+      //   data: formData,
+      //   onUploadProgress: function (progressEvent) {
+      //     console.log('onUploadProgress', progressEvent);
+      //     //progressEvent.loaded/progressEvent.total
+      //     if (progressEvent.lengthComputable) {
+      //       const totalLength = progressEvent.total;
+      //       let loaded = progressEvent.loaded;
+      //       console.log(loaded, totalLength);
+      //     }
+      //   },
+      // });
 
       this.setState(prevState => ({
         ...prevState,
@@ -183,7 +204,8 @@ class Documents extends React.Component {
         isSuccess: true,
         fromLanguagesList: languages,
         toLanguagesList: languages,
-        translatedFiles: res.data.translatedFiles
+        translatedFiles: res.data.translatedFiles,
+        isDisabled: !prevState.isDisabled
       }));
     } catch (err) {
       console.error(err)
@@ -261,8 +283,8 @@ class Documents extends React.Component {
 
     try {
       const res = await axios({
-        url: `/api/translate/documents/delete`,
-        method: `DELETE`,
+        url: '/api/translate/documents/delete',
+        method: 'DELETE',
         headers: config.headers,
         data: data
       });
@@ -270,7 +292,8 @@ class Documents extends React.Component {
       this.setState(prevState => ({
         ...prevState,
         isSuccess: false,
-        translatedFiles: res.data.translatedFiles
+        translatedFiles: res.data.translatedFiles,
+        files: res.data.translatedFiles.length === this.state.limit - 1 ? null : prevState.files
       }));
 
     } catch (error) {
@@ -321,6 +344,7 @@ class Documents extends React.Component {
                     helperText={'Required'}
                     languages={this.state.fromLanguagesList}
                     value={this.state.fromLanguage}
+                    isDisabled={this.state.isDisabled}
                   />
                 </Grid>
               }
@@ -336,13 +360,22 @@ class Documents extends React.Component {
                     helperText={'Required'}
                     languages={this.state.toLanguagesList}
                     value={this.state.toLanguage}
+                    isDisabled={this.state.isDisabled}
                   />
                 </Grid>
               }
               {
                 this.state.files && this.state.files.length > 0 && this.state.fromLanguage && this.state.toLanguage &&
                 <Grid item xs={12} sm={4}>
-                  <Button type="submit" variant="outlined" size="large" className={classes.sendBtn} startIcon={<SendOutlinedIcon color="inherit" />} disabled={this.state.translatedFiles.length === 3}>Translate</Button>
+                  <Button
+                    type="submit"
+                    variant="outlined"
+                    size="large"
+                    className={classes.sendBtn}
+                    startIcon={<SendOutlinedIcon color="inherit" />}
+                    disabled={this.state.isDisabled}>
+                    Translate
+                    </Button>
                 </Grid>
               }
             </Grid>
@@ -353,7 +386,12 @@ class Documents extends React.Component {
             {
               this.state.translatedFiles.length > 0 &&
               this.state.translatedFiles.map((element, index) => (
-                <TranslatedFile key={index} file={element} onClickDelete={this.onClickDelete} onClickDownload={this.onClickDownload} />
+                <TranslatedFile
+                  key={index}
+                  file={element}
+                  onClickDelete={this.onClickDelete}
+                  onClickDownload={this.onClickDownload}
+                  isDisabled={this.state.isDisabled} />
               ))
             }
           </Grid>
@@ -362,8 +400,24 @@ class Documents extends React.Component {
             <Grid container spacing={1} justify="center">
               <Grid item xs={12} md={6}>
                 <ButtonGroup fullWidth aria-label="full width outlined button group">
-                  <Button variant="contained" size="medium" className={classes.deleteBtn} startIcon={<DeleteOutlinedIcon color="inherit" />} onClick={this.onClickDeleteAll}>Delete All</Button>
-                  <Button variant="contained" size="medium" className={classes.downloadBtn} startIcon={<CloudDownloadOutlinedIcon color="inherit" />} onClick={this.onClickDownloadAll}>Download All</Button>
+                  <Button
+                    variant="contained"
+                    size="medium"
+                    className={classes.deleteBtn}
+                    startIcon={<DeleteOutlinedIcon color="inherit" />}
+                    onClick={this.onClickDeleteAll}
+                    disabled={this.state.isDisabled}>
+                    Delete All
+                    </Button>
+                  <Button
+                    variant="contained"
+                    size="medium"
+                    className={classes.downloadBtn}
+                    startIcon={<CloudDownloadOutlinedIcon color="inherit" />}
+                    onClick={this.onClickDownloadAll}
+                    disabled={this.state.isDisabled}>
+                    Download All
+                    </Button>
                 </ButtonGroup>
               </Grid>
             </Grid>

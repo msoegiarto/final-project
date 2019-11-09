@@ -31,6 +31,7 @@ class Select extends Component {
         id={this.props.id}
         select
         required
+        disabled={this.props.isDisabled}
         label={this.props.label}
         name={this.props.name}
         className={classes.textField}

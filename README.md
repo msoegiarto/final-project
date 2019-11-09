@@ -10,7 +10,7 @@ This is a webapp that let the user to upload a file and download the translated 
 
     ```
     AUTH0_DOMAIN=<your_auth0_domain>.auth0.com
-    AUTH0_AUDIENCE=<your_auth0_audience>
+    AUTH0_AUDIENCE=https://<your_auth0_api>
 
     MONGO_URI=mongodb://<host>:<port>/<database_name>
 
@@ -25,7 +25,7 @@ This is a webapp that let the user to upload a file and download the translated 
     {
       "domain": "<your_auth0_domain>.auth0.com",
       "clientId": "<your_auth0_client_id>",
-      "audience": "<https://yourauth0api>"
+      "audience": "https://<your_auth0_api>"
     }
     ```
 
