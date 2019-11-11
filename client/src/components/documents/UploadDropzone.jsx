@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { DropzoneArea } from 'material-ui-dropzone';
 
+
 class UploadDropzone extends Component {
   constructor(props) {
     super(props);
@@ -8,24 +9,28 @@ class UploadDropzone extends Component {
       files: null
     };
   }
-  
+
   handleChange(files) {
     this.setState({ files: files },
       () => this.props.dropzoneChangeHandler(this)
     );
   }
-  
+
   render() {
-    return (
-      <DropzoneArea
-        acceptedFiles={['text/plain']}
-        filesLimit={1}
-        maxFileSize={100000}
-        showFileNames={true}
-        dropzoneText={'Drag and drop a text file here or click'}
-        onChange={this.handleChange.bind(this)}
-      />
-    )
+    if (this.props.fileLength < this.props.fileLengthLimit) {
+      return (
+        <DropzoneArea
+          acceptedFiles={['text/plain']}
+          filesLimit={1}
+          maxFileSize={100000}
+          showFileNames={true}
+          dropzoneText={'Drag and drop a text file here or click'}
+          onChange={this.handleChange.bind(this)}
+        />
+      );
+    }
+
+    return (<></>);
   }
 }
 

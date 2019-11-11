@@ -1,8 +1,8 @@
 import React from 'react';
 import { BrowserRouter, Route, Switch } from 'react-router-dom';
-import AppNavbar from './components/AppNavbar';
+import AppNavbar from './components/navbar/AppNavbar';
 import Home from './components/Home';
-import PrivateRoute from './components/PrivateRoute';
+import PrivateRoute from './components/routes/PrivateRoute';
 import Documents from './components/Documents';
 import NotFound from './components/NotFound';
 

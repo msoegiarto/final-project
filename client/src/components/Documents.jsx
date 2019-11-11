@@ -2,7 +2,7 @@ import React, { Fragment } from 'react';
 import { Auth0Context } from "../auth0/react-auth0-wrapper";
 import axios from 'axios';
 import PropTypes from "prop-types";
-import UploadDropzone from './UploadDropzone';
+import UploadDropzone from './documents/UploadDropzone';
 import { withStyles } from "@material-ui/core/styles";
 import Grid from "@material-ui/core/Grid";
 import Button from '@material-ui/core/Button';
@@ -10,10 +10,10 @@ import ButtonGroup from '@material-ui/core/ButtonGroup';
 import SendOutlinedIcon from '@material-ui/icons/SendOutlined';
 import DeleteOutlinedIcon from '@material-ui/icons/DeleteOutlined';
 import CloudDownloadOutlinedIcon from '@material-ui/icons/CloudDownloadOutlined';
-import Select from './Select';
-import TranslatedFile from './TranslatedFile';
-import Message from './Message';
-import SuccessSnackbar from './SuccessSnackbar';
+import Select from './documents/Select';
+import TranslatedFile from './documents/TranslatedFile';
+import Message from './notifications/Message';
+import SuccessSnackbar from './notifications/SuccessSnackbar';
 import languages from './lang_config.json';
 
 const styles = theme => ({
@@ -321,14 +321,13 @@ class Documents extends React.Component {
           cStyle={'warning'} />
         <Fragment>
           <form className={classes.form} autoComplete="off" onSubmit={this.onClickTranslate}>
-
             <Grid container className={classes.upperSide} spacing={1} alignItems="center">
-              {
-                this.state.translatedFiles.length < this.state.limit &&
-                <Grid item xs={12}>
-                  <UploadDropzone dropzoneChangeHandler={this.dropzoneChangeHandler} />
-                </Grid>
-              }
+              <Grid item xs={12}>
+                <UploadDropzone
+                  dropzoneChangeHandler={this.dropzoneChangeHandler}
+                  fileLength={this.state.translatedFiles.length}
+                  fileLengthLimit={this.state.limit} />
+              </Grid>
               {
                 this.state.files && this.state.files.length > 0
                 && this.state.translatedFiles.length < this.state.limit &&
