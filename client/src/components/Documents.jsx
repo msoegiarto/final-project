@@ -176,27 +176,27 @@ class Documents extends React.Component {
     });
 
     try {
-      // const res = await axios({
-      //   url: '/api/translate/documents/translate',
-      //   method: 'POST',
-      //   headers: config.headers,
-      //   data: formData,
-      // });
       const res = await axios({
-        url: '/api/translate/documents/save_test',
+        url: '/api/translate/documents/translate',
         method: 'POST',
         headers: config.headers,
         data: formData,
-        onUploadProgress: function (progressEvent) {
-          console.log('onUploadProgress', progressEvent);
-          //progressEvent.loaded/progressEvent.total
-          if (progressEvent.lengthComputable) {
-            const totalLength = progressEvent.total;
-            let loaded = progressEvent.loaded;
-            console.log(loaded, totalLength);
-          }
-        },
       });
+      // const res = await axios({
+      //   url: '/api/translate/documents/save_test',
+      //   method: 'POST',
+      //   headers: config.headers,
+      //   data: formData,
+      //   onUploadProgress: function (progressEvent) {
+      //     console.log('onUploadProgress', progressEvent);
+      //     //progressEvent.loaded/progressEvent.total
+      //     if (progressEvent.lengthComputable) {
+      //       const totalLength = progressEvent.total;
+      //       let loaded = progressEvent.loaded;
+      //       console.log(loaded, totalLength);
+      //     }
+      //   },
+      // });
 
       this.setState(prevState => ({
         ...prevState,
