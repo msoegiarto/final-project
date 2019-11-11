@@ -31,7 +31,7 @@ const Home = () => {
 
   return (
     <Card className={classes.card}>
-      <CardActionArea className={classes.action}>
+      <CardActionArea>
         <CardMedia
           className={classes.media}
           image={image2}

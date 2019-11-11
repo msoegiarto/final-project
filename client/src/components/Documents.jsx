@@ -13,6 +13,7 @@ import CloudDownloadOutlinedIcon from '@material-ui/icons/CloudDownloadOutlined'
 import Select from './Select';
 import TranslatedFile from './TranslatedFile';
 import Message from './Message';
+import SuccessSnackbar from './SuccessSnackbar';
 import languages from './lang_config.json';
 
 const styles = theme => ({
@@ -175,27 +176,27 @@ class Documents extends React.Component {
     });
 
     try {
-      const res = await axios({
-        url: '/api/translate/documents/translate',
-        method: 'POST',
-        headers: config.headers,
-        data: formData,
-      });
       // const res = await axios({
-      //   url: '/api/translate/documents/save_test',
+      //   url: '/api/translate/documents/translate',
       //   method: 'POST',
       //   headers: config.headers,
       //   data: formData,
-      //   onUploadProgress: function (progressEvent) {
-      //     console.log('onUploadProgress', progressEvent);
-      //     //progressEvent.loaded/progressEvent.total
-      //     if (progressEvent.lengthComputable) {
-      //       const totalLength = progressEvent.total;
-      //       let loaded = progressEvent.loaded;
-      //       console.log(loaded, totalLength);
-      //     }
-      //   },
       // });
+      const res = await axios({
+        url: '/api/translate/documents/save_test',
+        method: 'POST',
+        headers: config.headers,
+        data: formData,
+        onUploadProgress: function (progressEvent) {
+          console.log('onUploadProgress', progressEvent);
+          //progressEvent.loaded/progressEvent.total
+          if (progressEvent.lengthComputable) {
+            const totalLength = progressEvent.total;
+            let loaded = progressEvent.loaded;
+            console.log(loaded, totalLength);
+          }
+        },
+      });
 
       this.setState(prevState => ({
         ...prevState,
@@ -310,18 +311,14 @@ class Documents extends React.Component {
 
     return (
       <div className={classes.container}>
-        <Fragment>
-          {
-            this.state.translatedFiles.length === this.state.limit &&
-            <Message text={'You have reached the maximum of 3 saved files.'} cStyle={'warning'} />
-          }
-        </Fragment>
-        <Fragment>
-          {
-            this.state.isSuccess &&
-            <Message text={'The file has been successfully translated.'} cStyle={'success'} />
-          }
-        </Fragment>
+        <SuccessSnackbar
+          isSuccess={this.state.isSuccess}
+          text="The file has been successfully translated!" />
+        <Message
+          fileLength={this.state.translatedFiles.length}
+          fileLengthLimit={this.state.limit}
+          text={`You have reached the maximum of ${this.state.limit} saved files.`}
+          cStyle={'warning'} />
         <Fragment>
           <form className={classes.form} autoComplete="off" onSubmit={this.onClickTranslate}>
 
@@ -395,6 +392,8 @@ class Documents extends React.Component {
               ))
             }
           </Grid>
+        </Fragment>
+        <Fragment>
           {
             this.state.translatedFiles.length > 1 &&
             <Grid container spacing={1} justify="center">
