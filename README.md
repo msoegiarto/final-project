@@ -6,7 +6,7 @@ This is a webapp that let the user to upload a file and download the translated 
 
 1.  Fork and clone the repo
 
-2.  Create a `.env` file in the root folder
+2.  Create a file `.env` file in the root folder
 
     ```
     AUTH0_DOMAIN=<your_auth0_domain>.auth0.com
@@ -19,14 +19,12 @@ This is a webapp that let the user to upload a file and download the translated 
     MS_TRANSLATION_TEXT_BASE_URL=<microsoft_translation_api_endpoint>
     ```
 
-3. Create a file `auth_config.json` in client/src/auth0/
+3. Create a file `.env.local` in client/
 
     ```
-    {
-      "domain": "<your_auth0_domain>.auth0.com",
-      "clientId": "<your_auth0_client_id>",
-      "audience": "https://<your_auth0_api>"
-    }
+    REACT_APP_AUTH0_DOMAIN=<your_auth0_domain>.auth0.com
+    REACT_APP_AUTH0_AUDIENCE=https://<your_auth0_api>
+    REACT_APP_AUTH0_CLIENTID=<your_auth0_client_id>
     ```
 
 4.  Install the dependencies

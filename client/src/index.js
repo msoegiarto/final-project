@@ -7,7 +7,10 @@ import CssBaseline from '@material-ui/core/CssBaseline';
 import { ThemeProvider } from '@material-ui/styles';
 import theme from './theme';
 import { Auth0Provider } from './auth0/react-auth0-wrapper';
-import config from './auth0/auth_config.json';
+// import config from './auth0/auth_config.json';
+import config from './config';
+
+const { auth0 } = config;
 
 // A function that routes the user to the right place after login
 const onRedirectCallback = appState => {
@@ -24,10 +27,10 @@ ReactDOM.render(
   <ThemeProvider theme={theme}>
     <CssBaseline />
     <Auth0Provider
-      domain={config.domain}
-      client_id={config.clientId}
+      domain={auth0.domain}
+      client_id={auth0.clientId}
       redirect_uri={window.location.origin}
-      audience={config.audience}
+      audience={auth0.audience}
       onRedirectCallback={onRedirectCallback}>
       <App />
     </Auth0Provider>

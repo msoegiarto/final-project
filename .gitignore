@@ -60,6 +60,7 @@ typings/
 
 # dotenv environment variables file
 .env
+.env.local
 
 auth_config.json
 

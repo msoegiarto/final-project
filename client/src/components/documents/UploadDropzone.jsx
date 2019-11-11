@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { DropzoneArea } from 'material-ui-dropzone';
+import config from '../../config';
 
 
 class UploadDropzone extends Component {
@@ -22,7 +23,7 @@ class UploadDropzone extends Component {
         <DropzoneArea
           acceptedFiles={['text/plain']}
           filesLimit={1}
-          maxFileSize={100000}
+          maxFileSize={config.MAX_ATTACHMENT_SIZE}
           showFileNames={true}
           dropzoneText={'Drag and drop a text file here or click'}
           onChange={this.handleChange.bind(this)}
