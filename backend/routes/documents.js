@@ -53,7 +53,7 @@ router.post('/', async (req, res, next) => {
  * 
  */
 router.post('/translate', async (req, res, next) => {
-  console.log('@@@@@');
+  
   try {
     const thisUser = _getUserFromRequest(req);
 

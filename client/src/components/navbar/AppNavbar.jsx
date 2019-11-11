@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, withRouter } from 'react-router-dom';
-import { useAuth0 } from '../auth0/react-auth0-wrapper';
+import { useAuth0 } from '../../auth0/react-auth0-wrapper';
 import { makeStyles } from '@material-ui/core/styles';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
