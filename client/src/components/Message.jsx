@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Fragment } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
@@ -26,25 +26,25 @@ const useStyles = makeStyles(theme => ({
 
 const Message = props => {
   const classes = useStyles();
-  if (props.cStyle === 'warning') {
+  if (props.cStyle === 'warning' && props.fileLength === props.fileLengthLimit) {
     return (
-      <div>
+      <Fragment>
         <Paper className={`${classes.root} ${classes.warning}`}>
           <Typography variant="h5" component="h5">
             {props.text}
           </Typography>
         </Paper>
-      </div>
+      </Fragment>
     );
-  } else if (props.cStyle === 'success') {
+  } else if (props.cStyle === 'success' && props.showMessage) {
     return (
-      <div>
+      <Fragment>
         <Paper className={`${classes.root} ${classes.success}`}>
           <Typography variant="h5" component="h5">
             {props.text}
           </Typography>
         </Paper>
-      </div>
+      </Fragment>
     );
   } else {
     return (<></>)
