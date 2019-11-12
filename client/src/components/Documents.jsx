@@ -15,7 +15,6 @@ import TranslatedFile from './documents/TranslatedFile';
 import Message from './notifications/Message';
 import SuccessSnackbar from './notifications/SuccessSnackbar';
 import languages from './lang_config.json';
-import config from '../config';
 
 const styles = theme => ({
   form: {
@@ -56,11 +55,10 @@ const styles = theme => ({
   }
 });
 
-const baseUrl = config.BASE_API_URL;
-
 const getConfig = async (context, contentType) => {
   const { getTokenSilently } = context;
   let accessToken = await getTokenSilently();
+  console.log(accessToken);
 
   return {
     headers: {
@@ -106,7 +104,7 @@ class Documents extends React.Component {
     const user = getUser(this.context);
 
     try {
-      const res = await axios.post(baseUrl + '/api/translate/documents', user, config);
+      const res = await axios.post('/api/translate/documents', user, config);
 
       if (res.data.translatedFiles) {
         this.setState(prevState => ({
@@ -180,13 +178,13 @@ class Documents extends React.Component {
 
     try {
       const res = await axios({
-        url: baseUrl + '/api/translate/documents/translate',
+        url: '/api/translate/documents/translate',
         method: 'POST',
         headers: config.headers,
         data: formData,
       });
       // const res = await axios({
-      //   url: baseUrl + '/api/translate/documents/save_test',
+      //   url: '/api/translate/documents/save_test',
       //   method: 'POST',
       //   headers: config.headers,
       //   data: formData,
@@ -236,7 +234,7 @@ class Documents extends React.Component {
 
     try {
       const res = await axios({
-        url: baseUrl + '/api/translate/documents/download',
+        url: '/api/translate/documents/download',
         method: 'POST',
         headers: config.headers,
         config: config,
@@ -288,7 +286,7 @@ class Documents extends React.Component {
 
     try {
       const res = await axios({
-        url: baseUrl + '/api/translate/documents/delete',
+        url: '/api/translate/documents/delete',
         method: 'DELETE',
         headers: config.headers,
         data: data

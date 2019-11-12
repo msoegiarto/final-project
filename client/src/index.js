@@ -28,8 +28,9 @@ ReactDOM.render(
     <Auth0Provider
       domain={auth0.domain}
       client_id={auth0.clientId}
-      redirect_uri={auth0.redirect_uri}
-      returnTo={auth0.return_to}
+      redirect_uri={auth0.redirectUri}
+      returnTo={auth0.returnTo}
+      audience={auth0.audience}
       onRedirectCallback={onRedirectCallback}>
       <App />
     </Auth0Provider>
