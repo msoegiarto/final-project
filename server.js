@@ -41,10 +41,10 @@ mongoose.connect(process.env.MONGO_URI, {
 
 if (process.env.NODE_ENV === 'production') {
   //Static file declaration
-  app.use(express.static(path.join(__dirname, '../client/build')));
+  app.use(express.static(path.join(__dirname, 'client/build')));
   
   //build mode 
-  app.get('*', (req, res) => { res.sendfile(path.join(__dirname = '../client/build/index.html')); })
+  app.get('*', (req, res) => { res.sendfile(path.join(__dirname = 'client/build/index.html')); })
 
 } else {
   
