@@ -40,7 +40,7 @@ mongoose.connect(process.env.MONGO_URI, {
   .catch(err => console.error(err));
 
 if (process.env.NODE_ENV === 'production') {
-  console.log(production);
+  console.log('production');
 
   //Static file declaration
   // app.use(express.static(path.join(__dirname, 'client/build')));
