@@ -23,7 +23,7 @@ const useStyles = makeStyles(theme => ({
 }));
 
 const ButtonAppBar = () => {
-  const { redirect_uri } = config.auth0;
+  const { redirect_uri, return_to } = config.auth0;
   const { isAuthenticated, loginWithRedirect, logout } = useAuth0();
   const classes = useStyles();
 
@@ -50,7 +50,7 @@ const ButtonAppBar = () => {
               <Button color="inherit">
                 <Link to="/documents" className="no-decor">Documents</Link>
               </Button>
-              <Button color="inherit" style={{ color: '#616161' }} onClick={() => logout({})}>Logout</Button>
+              <Button color="inherit" style={{ color: '#616161' }} onClick={() => logout({ returnTo: return_to })}>Logout</Button>
             </>
           )}
         </Toolbar>
