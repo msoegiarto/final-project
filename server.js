@@ -40,14 +40,17 @@ mongoose.connect(process.env.MONGO_URI, {
   .catch(err => console.error(err));
 
 if (process.env.NODE_ENV === 'production') {
+  console.log(production);
+
   //Static file declaration
-  app.use(express.static(path.join(__dirname, 'client/build')));
-  
+  // app.use(express.static(path.join(__dirname, 'client/build')));
+
   //build mode 
-  app.get('*', (req, res) => { res.sendfile(path.join(__dirname = 'client/build/index.html')); })
+  // app.get('*', (req, res) => { res.sendfile(path.join(__dirname = 'client/build/index.html')); })
+  app.get('*', (req, res) => { res.sendFile(path.join(__dirname = 'client/build/index.html')) });
 
 } else {
-  
+
   app.get('*', (req, res) => res.json({ msg: `Welcome to ${req.hostname}` }));
 }
 
