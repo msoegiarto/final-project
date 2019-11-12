@@ -14,7 +14,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(fileUpload({
   limits: { fileSize: 100000 },
 }));
-app.use(cors());
+app.use(cors({ exposedHeaders: 'Content-Disposition' }));
 
 // environment variables validation
 if (!process.env.MONGO_URI)
@@ -39,15 +39,18 @@ mongoose.connect(process.env.MONGO_URI, {
   .then(() => console.log('MongoDB connected...'))
   .catch(err => console.error(err));
 
-routes(app);
-
 if (process.env.NODE_ENV === 'production') {
   //Static file declaration
   app.use(express.static(path.join(__dirname, '../client/build')));
+  
   //build mode 
   app.get('*', (req, res) => { res.sendfile(path.join(__dirname = '../client/build/index.html')); })
+
 } else {
+  
   app.get('*', (req, res) => res.json({ msg: `Welcome to ${req.hostname}` }));
 }
+
+routes(app);
 
 app.listen(PORT, () => console.log(`Server started on port ${PORT}...`));
