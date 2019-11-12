@@ -7,6 +7,7 @@ import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
 import Button from '@material-ui/core/Button';
 import IconButton from '@material-ui/core/IconButton';
+import config from '../../config';
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -22,6 +23,7 @@ const useStyles = makeStyles(theme => ({
 }));
 
 const ButtonAppBar = () => {
+  const { redirect_uri } = config.auth0;
   const { isAuthenticated, loginWithRedirect, logout } = useAuth0();
   const classes = useStyles();
 
@@ -39,7 +41,7 @@ const ButtonAppBar = () => {
             <Link to="/" className="no-decor" color="secondary">MTL</Link>
           </Typography>
           {!isAuthenticated && (
-            <Button color="inherit" onClick={() => { loginWithRedirect({ redirect_uri: 'http://localhost:3000/documents' }) }}>
+            <Button color="inherit" onClick={() => { loginWithRedirect({ redirect_uri: redirect_uri }) }}>
               Login
             </Button>
           )}
@@ -48,7 +50,7 @@ const ButtonAppBar = () => {
               <Button color="inherit">
                 <Link to="/documents" className="no-decor">Documents</Link>
               </Button>
-              <Button color="inherit" style={{color:'#616161'}} onClick={() => logout({})}>Logout</Button>
+              <Button color="inherit" style={{ color: '#616161' }} onClick={() => logout({})}>Logout</Button>
             </>
           )}
         </Toolbar>
