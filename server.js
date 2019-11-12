@@ -39,6 +39,8 @@ mongoose.connect(process.env.MONGO_URI, {
   .then(() => console.log('MongoDB connected...'))
   .catch(err => console.error(err));
 
+routes(app);
+
 if (process.env.NODE_ENV === 'production') {
   console.log('production');
 
@@ -47,13 +49,11 @@ if (process.env.NODE_ENV === 'production') {
 
   //build mode 
   // app.get('*', (req, res) => { res.sendfile(path.join(__dirname = 'client/build/index.html')); })
-  app.get('*', (req, res) => { res.sendFile(path.join(__dirname = 'client/build/index.html')) });
+  app.get('*', (req, res) => { res.sendFile(path.join(__dirname, 'client/build', 'index.html')) });
 
 } else {
 
   app.get('*', (req, res) => res.json({ msg: `Welcome to ${req.hostname}` }));
 }
-
-routes(app);
 
 app.listen(PORT, () => console.log(`Server started on port ${PORT}...`));

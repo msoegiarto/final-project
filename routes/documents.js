@@ -11,15 +11,6 @@ const Users = require('../models/Users');
 const Userfiles = require('../models/Userfiles');
 
 /**
- * @GET /api/translate/documents
- * 
- */
-router.get('/', (req, res, next) => {
-  console.log('test');
-  res.json({ msg: `GET /api/translate/documents` });
-});
-
-/**
  * @POST /api/translate/documents
  * 
  */
