@@ -8,7 +8,9 @@ import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
 import DeleteOutlinedIcon from '@material-ui/icons/DeleteOutlined';
 import CloudDownloadOutlinedIcon from '@material-ui/icons/CloudDownloadOutlined';
+import DeleteDialog from './DeleteDialog';
 import languages from '../lang_config.json';
+
 
 const styles = theme => ({
   card: {
@@ -48,13 +50,13 @@ const styles = theme => ({
   }
 });
 
-
 class TranslatedFile extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
       fromLanguage: null,
-      toLanguage: null
+      toLanguage: null,
+      openDeleteDialog: false
     }
   }
 
@@ -66,11 +68,18 @@ class TranslatedFile extends React.Component {
   }
 
   onClickDelete = () => {
+    this.toggleDeleteDialog();
     this.props.onClickDelete(this.props.file.id);
   }
 
   onClickDownload = () => {
     this.props.onClickDownload(this.props.file.id);
+  }
+
+  toggleDeleteDialog = () => {
+    this.setState(prevState => ({
+      openDeleteDialog: !prevState.openDeleteDialog
+    }));
   }
 
   render() {
@@ -94,10 +103,14 @@ class TranslatedFile extends React.Component {
               size="medium"
               className={classes.deleteBtn}
               startIcon={<DeleteOutlinedIcon color="inherit" />}
-              onClick={this.onClickDelete}
+              onClick={this.toggleDeleteDialog}
               disabled={this.props.isDisabled}>
               Delete
               </Button>
+            <DeleteDialog
+              openDeleteDialog={this.state.openDeleteDialog}
+              toggleDeleteDialog={this.toggleDeleteDialog}
+              onClickDelete={this.onClickDelete} />
           </CardActions>
         </div>
         <div className={classes.details}>
