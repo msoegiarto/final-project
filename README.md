@@ -2,6 +2,8 @@
 
 This is a webapp that let the user to upload a file and download the translated file.
 
+Beta site: https://mtl-frontend.herokuapp.com/
+
 # Installation
 
 1.  Fork and clone the repo
@@ -76,6 +78,8 @@ __Library__
 [dotenv](https://github.com/motdotla/dotenv)
 
 [jszip](https://stuk.github.io/jszip/)
+
+[qs](https://github.com/ljharb/qs)
 
 [mongoDB](https://www.mongodb.com/)
 
