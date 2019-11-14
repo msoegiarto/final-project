@@ -23,12 +23,6 @@ if (!process.env.AUTH0_DOMAIN)
   throw new Error('Please set/export the following environment variable: AUTH0_DOMAIN');
 if (!process.env.AUTH0_AUDIENCE)
   throw new Error('Please set/export the following environment variable: AUTH0_AUDIENCE');
-if (!process.env.MS_TRANSLATION_TEXT_SUBSCRIPTION_KEY)
-  throw new Error('Please set/export the following environment variable: MS_TRANSLATION_TEXT_SUBSCRIPTION_KEY');
-if (!process.env.MS_TRANSLATION_TEXT_ACCESS_TOKEN_URL)
-  throw new Error('Please set/export the following environment variable: MS_TRANSLATION_TEXT_ACCESS_TOKEN_URL');
-if (!process.env.MS_TRANSLATION_TEXT_BASE_URL)
-  throw new Error('Please set/export the following environment variable: MS_TRANSLATION_TEXT_BASE_URL');
 
 // Connect to Mongo
 mongoose.connect(process.env.MONGO_URI, {
@@ -43,16 +37,8 @@ routes(app);
 
 if (process.env.NODE_ENV === 'production') {
   console.log('production');
-
-  //Static file declaration
-  // app.use(express.static(path.join(__dirname, 'client/build')));
-
-  //build mode 
-  // app.get('*', (req, res) => { res.sendfile(path.join(__dirname = 'client/build/index.html')); })
   app.get('*', (req, res) => { res.sendFile(path.join(__dirname, 'client/build', 'index.html')) });
-
 } else {
-
   app.get('*', (req, res) => res.json({ msg: `Welcome to ${req.hostname}` }));
 }
 

@@ -2,9 +2,11 @@ const Router = require('express').Router;
 const ObjectId = require('mongoose').Types.ObjectId;
 const JSZip = require('jszip');
 const MsTranslation = require('../middleware/Translation/MsTranslation');
+const YandexTranslation = require('../middleware/Translation/YandexTranslation');
 
 const router = new Router();
 const msTranslation = new MsTranslation();
+const yandexTranslation = new YandexTranslation();
 
 // Users model
 const Users = require('../models/Users');
@@ -43,7 +45,7 @@ router.post('/', async (req, res, next) => {
  * 
  */
 router.post('/translate', async (req, res, next) => {
-  
+
   try {
     const thisUser = _getUserFromRequest(req);
 
@@ -332,6 +334,8 @@ const _createBufferFromTextArray = textArray => {
   return Buffer.from(str);
 }
 
+// from here on, they are endpoints for "experiments and test"
+
 /**
  * @POST /api/translate/documents/save_test
  * 
@@ -407,6 +411,25 @@ router.post('/translate_test', async (req, res, next) => {
     res.json({ err: 'something went wrong' });
   }
 
+});
+
+router.post('/yandex_test', async (req, res, next) => {
+  try {
+
+    const uploadedFile = req.files.file; // file=what we define in react
+
+    const { fromLanguage, toLanguage } = req.body;
+
+    const translationResultArray = await yandexTranslation.translate(uploadedFile.data, fromLanguage, toLanguage);
+
+    await yandexTranslation.writeFile('../../../../test_file', 'newfile.txt', translationResultArray.textArray);
+
+    res.sendStatus(200);
+
+  } catch (err) {
+    console.error(err);
+    res.json({ err: 'something went wrong' });
+  }
 });
 
 module.exports = router;
