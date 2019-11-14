@@ -7,7 +7,6 @@ import CssBaseline from '@material-ui/core/CssBaseline';
 import { ThemeProvider } from '@material-ui/styles';
 import theme from './theme';
 import { Auth0Provider } from './auth0/react-auth0-wrapper';
-// import config from './auth0/auth_config.json';
 import config from './config';
 
 const { auth0 } = config;
@@ -29,8 +28,9 @@ ReactDOM.render(
     <Auth0Provider
       domain={auth0.domain}
       client_id={auth0.clientId}
-      redirect_uri={window.location.origin}
-      // audience={auth0.audience}
+      redirect_uri={auth0.redirectUri}
+      returnTo={auth0.returnTo}
+      audience={auth0.audience}
       onRedirectCallback={onRedirectCallback}>
       <App />
     </Auth0Provider>

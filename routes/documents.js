@@ -1,24 +1,16 @@
 const Router = require('express').Router;
 const ObjectId = require('mongoose').Types.ObjectId;
 const JSZip = require('jszip');
-const path = require('path');
 const MsTranslation = require('../middleware/Translation/MsTranslation');
+const YandexTranslation = require('../middleware/Translation/YandexTranslation');
 
 const router = new Router();
 const msTranslation = new MsTranslation();
+const yandexTranslation = new YandexTranslation();
 
 // Users model
 const Users = require('../models/Users');
 const Userfiles = require('../models/Userfiles');
-
-/**
- * @GET /api/translate/documents
- * 
- */
-router.get('/', (req, res, next) => {
-  console.log('test');
-  res.json({ msg: `GET /api/translate/documents` });
-});
 
 /**
  * @POST /api/translate/documents
@@ -53,7 +45,7 @@ router.post('/', async (req, res, next) => {
  * 
  */
 router.post('/translate', async (req, res, next) => {
-  
+
   try {
     const thisUser = _getUserFromRequest(req);
 
@@ -342,6 +334,8 @@ const _createBufferFromTextArray = textArray => {
   return Buffer.from(str);
 }
 
+// from here on, they are endpoints for "experiments and test"
+
 /**
  * @POST /api/translate/documents/save_test
  * 
@@ -403,12 +397,12 @@ router.post('/translate_test', async (req, res, next) => {
   try {
 
     // read the file from local directory
-    const readfileResult = await msTranslation.readPlainTextFile('../../test_file', 'a_spanish_text.txt');
+    const readfileResult = await msTranslation.readPlainTextFile('../test_file', 'a_spanish_text.txt');
 
     const result = await msTranslation.translate(readfileResult, req.body.fromLanguage, req.body.toLanguage);
 
     // write the file to local directory
-    await msTranslation.writeFile('../../test_file', 'newfile.txt', result.textArray);
+    await msTranslation.writeFile('../test_file', 'newfile.txt', result.textArray);
 
     res.json({ totalCharLength: result.totalCharLength });
 
@@ -417,6 +411,25 @@ router.post('/translate_test', async (req, res, next) => {
     res.json({ err: 'something went wrong' });
   }
 
+});
+
+router.post('/yandex_test', async (req, res, next) => {
+  try {
+
+    const uploadedFile = req.files.file; // file=what we define in react
+
+    const { fromLanguage, toLanguage } = req.body;
+
+    const translationResultArray = await yandexTranslation.translate(uploadedFile.data, fromLanguage, toLanguage);
+
+    await yandexTranslation.writeFile('../../../../test_file', 'newfile.txt', translationResultArray.textArray);
+
+    res.sendStatus(200);
+
+  } catch (err) {
+    console.error(err);
+    res.json({ err: 'something went wrong' });
+  }
 });
 
 module.exports = router;

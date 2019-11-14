@@ -33,7 +33,7 @@ const CHARACTER_LIMIT_DELIMITER = '||';
  * @returns {MsRequestData}
  */
 const _constructRequestData = (data) => {
-  console.log('[_constructRequestData] START');
+  console.log('[MS _constructRequestData] START');
 
   if (!data instanceof Buffer)
     throw new Error('Data is not a instance of Buffer');
@@ -66,7 +66,7 @@ const _constructRequestData = (data) => {
     }
   }
 
-  console.log('[_constructRequestData] END');
+  console.log('[MS _constructRequestData] END');
   return {
     totalCharLength,
     textArray
@@ -96,7 +96,7 @@ const _getNewToken = async () => {
  * @returns {string} token
  */
 const _getTranslationToken = async () => {
-  console.log('[_getTranslationToken] START');
+  console.log('[MS _getTranslationToken] START');
 
   let token = null;
 
@@ -129,7 +129,7 @@ const _getTranslationToken = async () => {
     );
   }
 
-  console.log('[_getTranslationToken] END');
+  console.log('[MS _getTranslationToken] END');
   return token;
 }
 
@@ -143,7 +143,7 @@ const _getTranslationToken = async () => {
  * @returns {Array.<Object>} an array of objects
  */
 const _constructSendRequest = async (requestData, fromLanguage, toLanguage) => {
-  console.log('[_constructSendRequest] START');
+  console.log('[MS _constructSendRequest] START');
 
   // get the microsoft token
   const token = await _getTranslationToken();
@@ -158,7 +158,7 @@ const _constructSendRequest = async (requestData, fromLanguage, toLanguage) => {
   });
   if (msTranslationResult.data.error) throw res.data.error;
 
-  console.log('[_constructSendRequest] END');
+  console.log('[MS _constructSendRequest] END');
   return msTranslationResult.data;
 }
 
@@ -237,7 +237,7 @@ const _consolidateResponseArray = responseArray => {
 }
 
 const _readPlainTextFile = async (filepath, filename) => {
-  console.log('[_readPlainTextFile] START');
+  console.log('[MS _readPlainTextFile] START');
 
   const file = path.join(__dirname, `../${filepath}/${filename}`);
 
@@ -277,7 +277,7 @@ const _readPlainTextFile = async (filepath, filename) => {
 
   await once(readInterface, 'close');
 
-  console.log('[_readPlainTextFile] END');
+  console.log('[MS _readPlainTextFile] END');
 
   return {
     totalCharLength,
@@ -286,10 +286,10 @@ const _readPlainTextFile = async (filepath, filename) => {
 }
 
 const _writeFile = async (filepath, filename, textArray) => {
-  console.log('[_writeFile] START');
+  console.log('[MS _writeFile] START');
 
-  // const dir = path.join(__dirname, `../../../test_file/${filename}`); // local for test
-  const dir = path.join(__dirname, `../${filepath}/${filename}`);
+  // const dir = path.join(__dirname, `../../test_file/${filename}`); // local for test
+  const dir = path.join(__dirname, `${filepath}/${filename}`);
 
   // to know more about flags, visit: https://nodejs.org/api/fs.html#fs_file_system_flags
   const stream = fs.createWriteStream(dir, { flags: 'w', encoding: 'utf8', emitClose: true });
@@ -313,11 +313,18 @@ const _writeFile = async (filepath, filename, textArray) => {
   });
 
   await once(stream, 'close');
-  console.log('[_writeFile] END');
+  console.log('[MS _writeFile] END');
 }
 
 class MsTranslation {
-  constructor() { }
+  constructor() {
+    if (!process.env.MS_TRANSLATION_TEXT_SUBSCRIPTION_KEY)
+      throw new Error('Please set/export the following environment variable: MS_TRANSLATION_TEXT_SUBSCRIPTION_KEY');
+    if (!process.env.MS_TRANSLATION_TEXT_ACCESS_TOKEN_URL)
+      throw new Error('Please set/export the following environment variable: MS_TRANSLATION_TEXT_ACCESS_TOKEN_URL');
+    if (!process.env.MS_TRANSLATION_TEXT_BASE_URL)
+      throw new Error('Please set/export the following environment variable: MS_TRANSLATION_TEXT_BASE_URL');
+  }
 
   /**
    * @async
@@ -344,7 +351,7 @@ class MsTranslation {
    * @async
    * @function readPlainTextFile
    * @description read from local file, plain/text
-   * @param {string} filepath - example: '../../test_file'
+   * @param {string} filepath - example: '../test_file'
    * @param {string} filename - example: 'filename.txt'
    * @returns {Promise<Object>} totalCharLength<number> and textArray<string[]>
    */
@@ -357,7 +364,7 @@ class MsTranslation {
    * @async
    * @function writeFile
    * @description write an array of text into a physical file
-   * @param {string} filepath - example: '../../test_file'
+   * @param {string} filepath - example: '../test_file'
    * @param {string} filename - example: 'filename.txt'
    * @param {Array.<string>} textArray
    */

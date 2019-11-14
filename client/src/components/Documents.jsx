@@ -2,7 +2,6 @@ import React, { Fragment } from 'react';
 import { Auth0Context } from "../auth0/react-auth0-wrapper";
 import axios from 'axios';
 import PropTypes from "prop-types";
-import UploadDropzone from './documents/UploadDropzone';
 import { withStyles } from "@material-ui/core/styles";
 import Grid from "@material-ui/core/Grid";
 import Button from '@material-ui/core/Button';
@@ -10,10 +9,11 @@ import ButtonGroup from '@material-ui/core/ButtonGroup';
 import SendOutlinedIcon from '@material-ui/icons/SendOutlined';
 import DeleteOutlinedIcon from '@material-ui/icons/DeleteOutlined';
 import CloudDownloadOutlinedIcon from '@material-ui/icons/CloudDownloadOutlined';
-import Select from './documents/Select';
-import TranslatedFile from './documents/TranslatedFile';
-import Message from './notifications/Message';
-import SuccessSnackbar from './notifications/SuccessSnackbar';
+import UploadDropzone from './documents/UploadDropzone.jsx';
+import Select from './documents/Select.jsx';
+import TranslatedFile from './documents/TranslatedFile.jsx';
+import Message from './notifications/Message.jsx';
+import SuccessSnackbar from './notifications/SuccessSnackbar.jsx';
 import languages from './lang_config.json';
 
 const styles = theme => ({
@@ -58,6 +58,7 @@ const styles = theme => ({
 const getConfig = async (context, contentType) => {
   const { getTokenSilently } = context;
   let accessToken = await getTokenSilently();
+  console.log(accessToken);
 
   return {
     headers: {
@@ -225,7 +226,7 @@ class Documents extends React.Component {
         tobeDownloadedFileIds.push({ id: element.id });
       });
       data.translatedFiles = tobeDownloadedFileIds;
-      // this.setState({ files: null });
+      
     } else {
       data.translatedFiles = [{ id: id }];
     }
@@ -236,6 +237,7 @@ class Documents extends React.Component {
         url: '/api/translate/documents/download',
         method: 'POST',
         headers: config.headers,
+        config: config,
         responseType: 'blob',
         data: data
       });
