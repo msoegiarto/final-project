@@ -18,58 +18,61 @@ const useStyles = makeStyles(theme => ({
   },
   media: {
     height: '112vh',
-    [theme.breakpoints.down('md')]: {
-      opacity: '0.3',
-    },
+    opacity: '0.3',
   },
   title: {
     position: 'absolute',
-    top: '50vh',
-    left: '5vw',
+    top: '30vh',
+    padding: '0 2.5rem',
     textShadow:
-      '-1px -1px 0 #fff, 1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff, 1px 1px 4px #673ab7',
-    [theme.breakpoints.down('sm')]: {
-      left: 0,
-      top: '20vh',
+      '-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 1px 1px 4px #673ab7',
+    [theme.breakpoints.up('md')]: {
+      top: '70vh',
+      left: '5vw',
+      padding: '0',
     }
   },
   description: {
     position: 'absolute',
     fontSize: '20px',
-    top: '40vh',
+    top: '15vh',
     padding: '0 2.5rem',
     textShadow:
-      '-1px -1px 0 #fff, 1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff, 2px 2px 0 #ccc',
+      '-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 2px 2px 0 #ccc',
     letterSpacing: '1px',
     [theme.breakpoints.up('md')]: {
-      top: '62vh',
+      top: '60vh',
       left: '5vw',
       padding: '0',
       textShadow:
-        '-1px -1px 1px #fff, 1px -1px 1px #fff,-1px 1px 1px #fff,1px 1px 1px #fff'
+        '-1px -1px 1px #fff, 1px -1px 1px #fff, -1px 1px 1px #fff, 1px 1px 1px #fff'
     },
-  }
+  },
 }));
 
 const Home = () => {
   const classes = useStyles();
 
   return (
-    <Card className={classes.card}>
-      <CardActionArea className={classes.action}>
-        <CardMedia
-          className={classes.media}
-          image={image}
-        />
-        <Typography component="h1" variant="h3" className={classes.title}>Let's get this sheet done</Typography>
-        <Typography component="p" className={classes.description}>Translating documents is as easy as uploading and downloading</Typography>
-      </CardActionArea>
-      <CardContent>
-        <Typography variant="body2" color="textSecondary" component="p">
-          Photo by <a href="https://www.translatemedia.com/">translatemedia</a>
-        </Typography>
-      </CardContent>
-    </Card>
+    <div>
+      <Card className={classes.card}>
+        <CardActionArea className={classes.action}>
+          <CardMedia
+            className={classes.media}
+            image={image}
+          />
+          <Typography component="p" className={classes.description}>There’s no better feeling than being clear:</Typography>
+          <Typography component="h1" variant="h4" className={classes.title}>drop your documents and get this sheet done</Typography>
+        </CardActionArea>
+      </Card>
+      <Card className={classes.card}>
+        <CardContent>
+          <Typography variant="body2" color="textSecondary" component="p">
+            Image by <a href="https://www.translatemedia.com/">translatemedia</a>, Copywriting by <a href="https://twitter.com/absolute_basura">Lilia Paz</a>
+          </Typography>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
