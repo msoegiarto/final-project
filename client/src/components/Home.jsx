@@ -68,7 +68,7 @@ const Home = () => {
       <Card className={classes.card}>
         <CardContent>
           <Typography variant="body2" color="textSecondary" component="p">
-            Image by <a href="https://www.translatemedia.com/">translatemedia</a>, Copywriting by <a href="https://twitter.com/absolute_basura">Lilia Paz</a>
+            Image by <a href="https://www.translatemedia.com/">translatemedia</a>, Copywriting by <a href="https://twitter.com/absolute_basura">Lilia Paz</a>, Font-styling by <a href="https://twitter.com/naomiquinones">Naomi Quiñones</a>
           </Typography>
         </CardContent>
       </Card>

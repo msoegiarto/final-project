@@ -9,11 +9,11 @@ import ButtonGroup from '@material-ui/core/ButtonGroup';
 import SendOutlinedIcon from '@material-ui/icons/SendOutlined';
 import DeleteOutlinedIcon from '@material-ui/icons/DeleteOutlined';
 import CloudDownloadOutlinedIcon from '@material-ui/icons/CloudDownloadOutlined';
-import UploadDropzone from './documents/UploadDropzone.jsx';
-import Select from './documents/Select.jsx';
-import TranslatedFile from './documents/TranslatedFile.jsx';
-import Message from './notifications/Message.jsx';
-import SuccessSnackbar from './notifications/SuccessSnackbar.jsx';
+import UploadDropzone from './documents/UploadDropzone';
+import Select from './documents/Select';
+import TranslatedFile from './documents/TranslatedFile';
+import Message from './notifications/Message';
+import SuccessSnackbar from './notifications/SuccessSnackbar';
 import DeleteDialog from './documents/DeleteDialog';
 import languages from './lang_config.json';
 
