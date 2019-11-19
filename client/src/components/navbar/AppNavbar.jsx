@@ -54,7 +54,7 @@ const AppNavBar = () => {
             className={classes.menuButton} >
           </IconButton>
           <Typography variant="h6" className={classes.title} >
-            <Link to="/" className="no-decor" color="inherit">MTL</Link>
+            <Link to="/" className="no-decor" color="inherit">TXTRANS</Link>
           </Typography>
           {
             !isAuthenticated &&

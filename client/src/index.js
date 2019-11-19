@@ -4,7 +4,7 @@ import './index.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
 import { Auth0Provider } from './contexts/react-auth0-context';
-import { FTProvider } from './contexts/file-translation-context';
+import { TxtransProvider } from './contexts/document-translation-context';
 import { ThemeProvider } from '@material-ui/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import theme from './theme';
@@ -33,9 +33,9 @@ ReactDOM.render(
       returnTo={auth0.returnTo}
       audience={auth0.audience}
       onRedirectCallback={onRedirectCallback}>
-      <FTProvider>
+      <TxtransProvider>
         <App />
-      </FTProvider>
+      </TxtransProvider>
     </Auth0Provider>
   </ThemeProvider>,
   document.getElementById('root'));
