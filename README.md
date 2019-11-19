@@ -27,6 +27,10 @@ Beta site: https://mtl-frontend.herokuapp.com/
     REACT_APP_AUTH0_DOMAIN=<your_auth0_domain>.auth0.com
     REACT_APP_AUTH0_AUDIENCE=https://<your_auth0_api>
     REACT_APP_AUTH0_CLIENTID=<your_auth0_client_id>
+    REACT_APP_AUTH0_REDIRECT_URI=<redirect_uri_after_login>
+    REACT_APP_AUTH0_RETURN_TO=<redirect_uri_after_logout>
+
+    REACT_APP_MTL_BASE_API=<your_backend_server>
     ```
 
 4.  Install the dependencies
