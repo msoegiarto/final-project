@@ -53,11 +53,11 @@ router.post('/translate', async (req, res, next) => {
 
     const uploadedFile = req.files.file; // file=what we define in react
 
-    const { fromLanguage, toLanguage } = req.body;
+    const { sourceLanguage, targetLanguage } = req.body;
 
-    const newFilename = await _constructNewFilename(thisUser, uploadedFile.name, toLanguage);
+    const newFilename = await _constructNewFilename(thisUser, uploadedFile.name, targetLanguage);
 
-    const translationResultArray = await msTranslation.translate(uploadedFile.data, fromLanguage, toLanguage);
+    const translationResultArray = await msTranslation.translate(uploadedFile.data, sourceLanguage, targetLanguage);
 
     const buf = _createBufferFromTextArray(translationResultArray.textArray);
 
@@ -65,8 +65,8 @@ router.post('/translate', async (req, res, next) => {
       data: buf,
       content_type: 'text/plain',
       file_name: newFilename,
-      lang_from: fromLanguage,
-      lang_to: toLanguage,
+      lang_from: sourceLanguage,
+      lang_to: targetLanguage,
       char_length: translationResultArray.totalCharLength
     };
 
@@ -86,7 +86,7 @@ router.post('/translate', async (req, res, next) => {
  * 
  */
 router.delete('/delete', async (req, res, next) => {
-  const tobeDeletedFileIds = req.body.translatedFiles;
+  const tobeDeletedFileIds = req.body.translatedFileIds;
   if (!tobeDeletedFileIds || tobeDeletedFileIds.length === 0)
     return res.status(400).json({ err: 'no files to be deleted' });
 
@@ -107,7 +107,7 @@ router.delete('/delete', async (req, res, next) => {
  * 
  */
 router.post('/download', async (req, res, next) => {
-  const tobeDownloadedFileIds = req.body.translatedFiles;
+  const tobeDownloadedFileIds = req.body.translatedFileIds;
   if (!tobeDownloadedFileIds || tobeDownloadedFileIds.length === 0)
     return res.status(400).json({ err: 'no file to be downloaded' });
 
