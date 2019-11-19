@@ -1,6 +1,6 @@
-# MTL (Machine Translation)
+# Txtrans (Machine translation for txt file)
 
-This is a webapp that let the user to upload a file and download the translated file.
+This is a webapp that let the users to upload a text file and download the translated file.
 
 Beta site: https://mtl-frontend.herokuapp.com/
 
