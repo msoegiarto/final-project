@@ -67,11 +67,11 @@ table name = translations
 
 # Built with
 
-__API__
+__APIs__
 
 [Microsoft Translator](https://www.microsoft.com/en-us/translator/)
 
-__Library__
+__Libraries__
 
 [express](https://expressjs.com/)
 
