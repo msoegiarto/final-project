@@ -107,3 +107,46 @@ __Authentication__
 
 [Auth0 auth0-spa-js](https://github.com/auth0/auth0-spa-js)
 
+# Endpoints
+
+__Frontend__
+
+1. `/` Landing Page
+   
+2. `/documents` Documents Page
+
+__Backend__
+
+1.  ```
+    POST /api/translate/documents/
+    body: email, authentication
+    ```
+
+    If a user is login for the first time then persist the user to the database.
+   
+    If it’s an existing user, retrieve their saved documents (if any).
+
+2. ```
+   POST /api/translate/documents/translate
+   body: email, authentication, sourceLanguage, targetLanguage, file
+   ```
+     
+   Get the texts from the user uploaded document and reshape those texts into an http request data and send them to a 3rd party translation API
+   
+   Save the result of the translation into the database
+
+3. ```
+   POST /api/translate/documents/download
+   body: email, authentication, nickname, translatedFileIds[]
+   ```
+   
+   Retrieve the translated texts from the database and format those texts into a text file then send the file as an attachment
+
+   If the download request is for multiple files, those files will be zipped before being sent
+
+4. ```
+   POST /api/translate/documents/delete
+   body: email, authentication, translatedFileIds[]
+   ```
+   
+   Delete the saved document(s)
