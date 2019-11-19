@@ -5,7 +5,7 @@ import ButtonGroup from '@material-ui/core/ButtonGroup';
 import FileItem from './FileItem';
 import DownloadButton from './DownloadButton';
 import DeleteButton from './DeleteButton';
-import { useFT } from '../../contexts/file-translation-context';
+import { useTxtrans } from '../../contexts/document-translation-context';
 
 const useStyles = makeStyles(theme => ({
   root: {
@@ -25,7 +25,7 @@ const useStyles = makeStyles(theme => ({
 
 const FileTable = props => {
   const classes = useStyles();
-  const { contextTranslatedFiles } = useFT();
+  const { contextTranslatedFiles } = useTxtrans();
 
   const handleDownload = id => {
     props.handleDownload(id);

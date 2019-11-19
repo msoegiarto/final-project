@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import clsx from 'clsx';
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
+import ErrorIcon from '@material-ui/icons/Error';
 import CloseIcon from '@material-ui/icons/Close';
 import { green } from '@material-ui/core/colors';
 import IconButton from '@material-ui/core/IconButton';
@@ -11,6 +12,7 @@ import { makeStyles } from '@material-ui/core/styles';
 
 const variantIcon = {
   success: CheckCircleIcon,
+  error: ErrorIcon,
 };
 
 const useStyles1 = makeStyles(theme => ({
@@ -62,15 +64,15 @@ MySnackbarContentWrapper.propTypes = {
   variant: PropTypes.string.isRequired,
 };
 
-export default function SuccessSnackbars(props) {
+export default function MessageSnackbars(props) {
   const [open, setOpen] = React.useState(false);
-  const { text } = props;
+  const { text, variant } = props;
 
   React.useEffect(() => {
-    if (props.openSuccessSnackbar) {
+    if (props.openSnackbar) {
       setOpen(true);
     }
-  }, [props.openSuccessSnackbar]);
+  }, [props.openSnackbar]);
 
   const handleClose = (event, reason) => {
     if (reason === 'clickaway') {
@@ -92,14 +94,15 @@ export default function SuccessSnackbars(props) {
     >
       <MySnackbarContentWrapper
         onClose={handleClose}
-        variant="success"
+        variant={variant}
         message={text}
       />
     </Snackbar>
   );
 }
 
-SuccessSnackbars.propTypes = {
-  openSuccessSnackbar: PropTypes.bool.isRequired,
+MessageSnackbars.propTypes = {
+  openSnackbar: PropTypes.bool.isRequired,
   text: PropTypes.string.isRequired,
+  variant: PropTypes.string.isRequired,
 };

@@ -19,10 +19,10 @@ const getRequestUser = user => {
   };
 }
 
-export const FTContext = React.createContext();
-export const useFT = () => useContext(FTContext);
+export const TxtransContext = React.createContext();
+export const useTxtrans = () => useContext(TxtransContext);
 
-export const FTProvider = ({ children }) => {
+export const TxtransProvider = ({ children }) => {
   const [loadFiles, setLoadFiles] = useState(true);
   const [contextTranslatedFiles, setContextTranslatedFiles] = useState([]);
 
@@ -134,7 +134,7 @@ export const FTProvider = ({ children }) => {
   }
 
   return (
-    <FTContext.Provider
+    <TxtransContext.Provider
       value={{
         loadFiles,
         contextTranslatedFiles,
@@ -144,6 +144,6 @@ export const FTProvider = ({ children }) => {
         doDeleteFiles
       }}>
       {children}
-    </FTContext.Provider>
+    </TxtransContext.Provider>
   );
 }
