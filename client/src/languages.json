@@ -5,6 +5,10 @@
   "key": "fr",
   "value": "French"
 }, {
+  "key": "ja",
+  "value": "Japanese"
+},
+{
   "key": "de",
   "value": "German"
 }, {
@@ -13,4 +17,7 @@
 }, {
   "key": "it",
   "value": "Italian"
+}, {
+  "key": "th",
+  "value": "Thai"
 }]

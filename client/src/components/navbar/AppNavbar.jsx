@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { Fragment } from 'react';
 import { Link, withRouter } from 'react-router-dom';
-import { useAuth0 } from '../../auth0/react-auth0-wrapper';
+import { useAuth0 } from '../../contexts/react-auth0-context';
 import { makeStyles } from '@material-ui/core/styles';
+import { blueGrey, grey } from '@material-ui/core/colors';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
@@ -12,6 +13,10 @@ const useStyles = makeStyles(theme => ({
   root: {
     flexGrow: 1,
   },
+  appbar: {
+    color: theme.palette.getContrastText(blueGrey[50]),
+    background: blueGrey[50],
+  },
   menuButton: {
     marginRight: theme.spacing(2),
   },
@@ -19,15 +24,28 @@ const useStyles = makeStyles(theme => ({
     flexGrow: 1,
     textAlign: "left",
   },
+  linkBtn: {
+    '&:hover': {
+      color: theme.palette.getContrastText(blueGrey[800]),
+      background: blueGrey[800],
+    }
+  },
+  logoutBtn: {
+    color: grey[700],
+    '&:hover': {
+      color: theme.palette.getContrastText(blueGrey[800]),
+      background: blueGrey[800],
+    }
+  }
 }));
 
-const ButtonAppBar = () => {
-  const { isAuthenticated, loginWithRedirect, logout } = useAuth0();
+const AppNavBar = () => {
   const classes = useStyles();
+  const { isAuthenticated, loginWithRedirect, logout } = useAuth0();
 
   return (
     <div className={classes.root}>
-      <AppBar position="static">
+      <AppBar position="static" className={classes.appbar}>
         <Toolbar>
           <IconButton
             edge="start"
@@ -36,25 +54,32 @@ const ButtonAppBar = () => {
             className={classes.menuButton} >
           </IconButton>
           <Typography variant="h6" className={classes.title} >
-            <Link to="/" className="no-decor" color="secondary">MTL</Link>
+            <Link to="/" className="no-decor" color="inherit">MTL</Link>
           </Typography>
-          {!isAuthenticated && (
-            <Button color="inherit" onClick={() => { loginWithRedirect({}) }}>
-              Login
-            </Button>
-          )}
-          {isAuthenticated && (
-            <>
-              <Button color="inherit">
-                <Link to="/documents" className="no-decor">Documents</Link>
-              </Button>
-              <Button color="inherit" style={{ color: '#616161' }} onClick={() => logout({ })}>Logout</Button>
-            </>
-          )}
+          {
+            !isAuthenticated &&
+            (
+              <Button className={classes.linkBtn} onClick={() => { loginWithRedirect({}) }}>
+                Login
+                </Button>
+            )
+          }
+          {
+            isAuthenticated &&
+            (
+              <Fragment>
+                <Button className={classes.linkBtn} component="a" href="/documents">
+                  Documents
+                </Button>
+                <Button className={classes.logoutBtn} onClick={() => logout({})}>Logout</Button>
+              </Fragment>
+            )
+          }
+
         </Toolbar>
       </AppBar>
     </div>
   );
 }
 
-export default withRouter(ButtonAppBar);
+export default withRouter(AppNavBar);

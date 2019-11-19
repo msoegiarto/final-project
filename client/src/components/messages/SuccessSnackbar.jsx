@@ -67,10 +67,10 @@ export default function SuccessSnackbars(props) {
   const { text } = props;
 
   React.useEffect(() => {
-    if (props.isSuccess) {
+    if (props.openSuccessSnackbar) {
       setOpen(true);
     }
-  }, [props.isSuccess]);
+  }, [props.openSuccessSnackbar]);
 
   const handleClose = (event, reason) => {
     if (reason === 'clickaway') {
@@ -100,6 +100,6 @@ export default function SuccessSnackbars(props) {
 }
 
 SuccessSnackbars.propTypes = {
-  isSuccess: PropTypes.bool.isRequired,
+  openSuccessSnackbar: PropTypes.bool.isRequired,
   text: PropTypes.string.isRequired,
 };
