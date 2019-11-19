@@ -1,246 +1,93 @@
-import React, { Fragment } from 'react';
-import { Auth0Context } from "../auth0/react-auth0-wrapper";
-import axios from 'axios';
-import PropTypes from "prop-types";
-import { withStyles } from "@material-ui/core/styles";
-import Grid from "@material-ui/core/Grid";
-import Button from '@material-ui/core/Button';
-import ButtonGroup from '@material-ui/core/ButtonGroup';
-import SendOutlinedIcon from '@material-ui/icons/SendOutlined';
-import DeleteOutlinedIcon from '@material-ui/icons/DeleteOutlined';
-import CloudDownloadOutlinedIcon from '@material-ui/icons/CloudDownloadOutlined';
-import UploadDropzone from './documents/UploadDropzone.jsx';
-import Select from './documents/Select.jsx';
-import TranslatedFile from './documents/TranslatedFile.jsx';
-import Message from './notifications/Message.jsx';
-import SuccessSnackbar from './notifications/SuccessSnackbar.jsx';
-import languages from './lang_config.json';
+import React, { useState, useEffect } from 'react';
+import { makeStyles } from '@material-ui/core/styles';
+import CircularProgress from '@material-ui/core/CircularProgress';
+import UploadForm from './forms/UploadForm';
+import SuccessSnackbar from './messages/SuccessSnackbar';
+import WarningMessage from './messages/WarningMessage';
+import FileTable from './tables/FileTable';
+import { useAuth0 } from '../contexts/react-auth0-context';
+import { useFT } from '../contexts/file-translation-context';
+import config from '../config';
 
-const styles = theme => ({
-  form: {
-    margin: theme.spacing(1),
-  },
-  upperSide: {
-    display: 'flex',
+const MAX_FILE_LIMIT = config.MAX_FILE_LIMIT;
+
+const useStyles = makeStyles(theme => ({
+  root: {
     flexGrow: 1,
-  },
-  sendBtn: {
-    width: 200,
-    color: '#6200ea',
-    [theme.breakpoints.down('sm')]: {
-      margin: '2vh 0',
-    },
-  },
-  lowerSide: {
-    display: 'flex',
-    flexGrow: 1,
-    marginTop: '10vh',
-  },
-  deleteBtn: {
-    flexDirection: 'column',
-    margin: theme.spacing(1),
-    color: '#ff3d00',
-    width: '100%',
-  },
-  downloadBtn: {
-    flexDirection: 'column',
-    margin: theme.spacing(1),
-    color: '#11cb5f',
-    width: '100%',
-  },
-  container: {
     [theme.breakpoints.up('md')]: {
       margin: '0 20vw',
     },
-  }
-});
+  },
+  circular: {
+    display: 'flex',
+    direction: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    '& > * + *': {
+      marginLeft: theme.spacing(2),
+    },
+  },
+}));
 
-const getConfig = async (context, contentType) => {
-  const { getTokenSilently } = context;
-  let accessToken = await getTokenSilently();
-  console.log(accessToken);
+const DocumentsContent = () => {
+  const classes = useStyles();
+  const { getTokenSilently, user } = useAuth0();
+  const { loadFiles, contextTranslatedFiles, retrieveUserSavedFilesOrSaveNewUser, doTranslateFiles, doDownloadFiles, doDeleteFiles } = useFT();
 
-  return {
-    headers: {
-      'Content-Type': contentType,
-      Authorization: `Bearer ${accessToken}`
-    }
-  };
-}
+  const [disabled, setDisabled] = useState(false);
+  const [openSuccessSnackbar, setOpenSuccessSnackbar] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [showWarningMessage, setShowWarningMessage] = useState('');
 
-const getUser = context => {
-  const { user } = context;
-
-  return {
-    email: user.email,
-    authentication: user.sub,
-    nickname: user.nickname,
-  };
-}
-
-class Documents extends React.Component {
-
-  static contextType = Auth0Context;
-
-  constructor(props) {
-    super(props);
-    this.state = {
-      limit: 3,
-      files: null,
-      fromLanguage: '',
-      toLanguage: '',
-      fromLanguagesList: [],
-      toLanguagesList: [],
-      translatedFiles: [],
-      isSuccess: false,
-      isDisabled: false
-    }
-  }
-
-  componentDidMount = async () => {
-    this.filterLanguagesList('');
-
-    const config = await getConfig(this.context, 'application/json');
-    const user = getUser(this.context);
-
-    try {
-      const res = await axios.post('/api/translate/documents', user, config);
-
-      if (res.data.translatedFiles) {
-        this.setState(prevState => ({
-          ...prevState,
-          translatedFiles: res.data.translatedFiles
-        }));
+  // equivalent to componentDidMount
+  // function: save new user into DB or retrieve existing user's files (if any)
+  useEffect(() => {
+    const initialize = async () => {
+      try {
+        const accessToken = await getTokenSilently();
+        await retrieveUserSavedFilesOrSaveNewUser(accessToken, user);
+      } catch (err) {
+        console.error(err);
       }
-    } catch (err) {
-      console.error(err)
-    }
+    };
+    initialize();
+    // eslint-disable-next-line 
+  }, []);
 
-  }
-
-  selectChangeHandler = (child) => {
-    this.setState(oldState => ({
-      ...oldState,
-      isSuccess: false,
-      [child.props.name]: child.state.value
-    }), () => this.filterLanguagesList(child.props.name));
-
-  }
-
-  dropzoneChangeHandler = (child) => {
-    this.setState(oldState => ({
-      ...oldState,
-      isSuccess: false,
-      files: child.state.files
-    }));
-  }
-
-  filterLanguagesList = (name) => {
-    if (!name) {
-      this.setLanguagesList('toLanguagesList', languages);
-      this.setLanguagesList('fromLanguagesList', languages);
-    } if (name === 'fromLanguage') {
-      let newList = languages.filter(element => element.key !== this.state.fromLanguage);
-      this.setLanguagesList('toLanguagesList', newList);
-    } else if (name === 'toLanguage') {
-      let newList = languages.filter(element => element.key !== this.state.toLanguage);
-      this.setLanguagesList('fromLanguagesList', newList);
-    }
-  }
-
-  setLanguagesList = (name, newList) => {
-    this.setState(oldState => ({
-      ...oldState,
-      [name]: newList,
-    }));
-  }
-
-  onClickTranslate = async (event) => {
-    event.preventDefault();
-    this.setState(oldState => ({
-      ...oldState,
-      isSuccess: false,
-      isDisabled: !oldState.isDisabled
-    }));
-
-    const config = await getConfig(this.context, 'multipart/form-data');
-    const user = getUser(this.context);
-
-    const formData = new FormData();
-    formData.append('name', user.name);
-    formData.append('authentication', user.authentication);
-    formData.append('email', user.email);
-    formData.append('fromLanguage', this.state.fromLanguage);
-    formData.append('toLanguage', this.state.toLanguage);
-    this.state.files.forEach(element => {
-      formData.append('file', element, element.name);
-    });
-
-    try {
-      const res = await axios({
-        url: '/api/translate/documents/translate',
-        method: 'POST',
-        headers: config.headers,
-        data: formData,
-      });
-      // const res = await axios({
-      //   url: '/api/translate/documents/save_test',
-      //   method: 'POST',
-      //   headers: config.headers,
-      //   data: formData,
-      //   onUploadProgress: function (progressEvent) {
-      //     console.log('onUploadProgress', progressEvent);
-      //     //progressEvent.loaded/progressEvent.total
-      //     if (progressEvent.lengthComputable) {
-      //       const totalLength = progressEvent.total;
-      //       let loaded = progressEvent.loaded;
-      //       console.log(loaded, totalLength);
-      //     }
-      //   },
-      // });
-
-      this.setState(prevState => ({
-        ...prevState,
-        fromLanguage: '',
-        toLanguage: '',
-        isSuccess: true,
-        fromLanguagesList: languages,
-        toLanguagesList: languages,
-        translatedFiles: res.data.translatedFiles,
-        isDisabled: !prevState.isDisabled
-      }));
-    } catch (err) {
-      console.error(err)
-    }
-  }
-
-  onClickDownload = async (id) => {
-    console.log('onClickDownload', id);
-    const config = await getConfig(this.context, 'application/json');
-    const user = getUser(this.context);
-
-    const data = {};
-    if (id === 'ALL') {
-      const tobeDownloadedFileIds = [];
-      this.state.translatedFiles.forEach(element => {
-        tobeDownloadedFileIds.push({ id: element.id });
-      });
-      data.translatedFiles = tobeDownloadedFileIds;
-      
+  useEffect(() => {
+    if (contextTranslatedFiles && contextTranslatedFiles.length === MAX_FILE_LIMIT) {
+      setShowWarningMessage(true);
     } else {
-      data.translatedFiles = [{ id: id }];
+      setShowWarningMessage(false);
     }
-    data.nickname = user.nickname;
+  }, [contextTranslatedFiles]);
+
+  const handleSubmit = async (dropzoneFiles, sourceLanguage, targetLanguage) => {
+    setDisabled(true);
+    setOpenSuccessSnackbar(false);
 
     try {
-      const res = await axios({
-        url: '/api/translate/documents/download',
-        method: 'POST',
-        headers: config.headers,
-        config: config,
-        responseType: 'blob',
-        data: data
-      });
+      const accessToken = await getTokenSilently();
+
+      await doTranslateFiles(accessToken, user, dropzoneFiles, sourceLanguage, targetLanguage);
+
+      setSuccessMessage(`The file ${dropzoneFiles[dropzoneFiles.length - 1].name} has been successfully translated`);
+      setOpenSuccessSnackbar(true);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDisabled(false);
+    }
+  }
+
+  const handleDownload = async (id) => {
+    setDisabled(true);
+    setOpenSuccessSnackbar(false);
+
+    try {
+      const accessToken = await getTokenSilently();
+
+      const res = await doDownloadFiles(accessToken, user, id)
 
       const contentDisposition = res.headers['content-disposition'];
       const startIndex = contentDisposition.indexOf('filename=') + 9;
@@ -254,182 +101,66 @@ class Documents extends React.Component {
       link.click();
       window.URL.revokeObjectURL(url);
 
+      setSuccessMessage('Downloading...');
+      setOpenSuccessSnackbar(true);
     } catch (error) {
       console.error(error);
+    } finally {
+      setDisabled(false);
     }
   }
 
-  onClickDownloadAll = () => {
-    this.onClickDownload('ALL');
-  }
-
-  onClickDelete = async (id) => {
-    const config = await getConfig(this.context, 'application/json');
-    const user = getUser(this.context);
-
-    const data = {
-      email: user.email,
-      authentication: user.authentication,
-    };
-
-    if (id === 'ALL') {
-      const tobeDeletedFileIds = [];
-      this.state.translatedFiles.forEach(element => {
-        tobeDeletedFileIds.push({ id: element.id });
-      });
-      data.translatedFiles = tobeDeletedFileIds;
-      this.setState({ files: null });
-    } else {
-      data.translatedFiles = [{ id: id }];
-      this.setState({ translatedFiles: [] });
-    }
+  const handleDelete = async (id, name) => {
+    setDisabled(true);
+    setOpenSuccessSnackbar(false);
 
     try {
-      const res = await axios({
-        url: '/api/translate/documents/delete',
-        method: 'DELETE',
-        headers: config.headers,
-        data: data
-      });
+      const accessToken = await getTokenSilently();
+      await doDeleteFiles(accessToken, user, id)
 
-      this.setState(prevState => ({
-        ...prevState,
-        isSuccess: false,
-        translatedFiles: res.data.translatedFiles,
-        files: res.data.translatedFiles.length === this.state.limit - 1 ? null : prevState.files
-      }));
+      let message = (id === 'ALL') ? 'All the files have been successfully deleted' : `The file ${name} has been successfully deleted`;
 
+      setSuccessMessage(message);
+      setOpenSuccessSnackbar(true);
     } catch (error) {
       console.error(error);
+    } finally {
+      setDisabled(false);
     }
+
   }
 
-  onClickDeleteAll = () => {
-    this.onClickDelete('ALL');
-  }
+  if (loadFiles) {
+    return (<div className={`${classes.root} ${classes.circular}`}><CircularProgress /></div>);
+  };
 
-  render() {
-    const { classes } = this.props;
-
-    return (
-      <div className={classes.container}>
-        <SuccessSnackbar
-          isSuccess={this.state.isSuccess}
-          text="The file has been successfully translated!" />
-        <Message
-          fileLength={this.state.translatedFiles.length}
-          fileLengthLimit={this.state.limit}
-          text={`You have reached the maximum of ${this.state.limit} saved files.`}
-          cStyle={'warning'} />
-        <Fragment>
-          <form className={classes.form} autoComplete="off" onSubmit={this.onClickTranslate}>
-            <Grid container className={classes.upperSide} spacing={1} alignItems="center">
-              <Grid item xs={12}>
-                <UploadDropzone
-                  dropzoneChangeHandler={this.dropzoneChangeHandler}
-                  fileLength={this.state.translatedFiles.length}
-                  fileLengthLimit={this.state.limit} />
-              </Grid>
-              {
-                this.state.files && this.state.files.length > 0
-                && this.state.translatedFiles.length < this.state.limit &&
-                <Grid item xs={12} sm={4}>
-                  <Select
-                    selectChangeHandler={this.selectChangeHandler}
-                    name={'fromLanguage'}
-                    label={'From'}
-                    id={'select-from-language'}
-                    helperText={'Required'}
-                    languages={this.state.fromLanguagesList}
-                    value={this.state.fromLanguage}
-                    isDisabled={this.state.isDisabled}
-                  />
-                </Grid>
-              }
-              {
-                this.state.files && this.state.files.length > 0
-                && this.state.translatedFiles.length < this.state.limit &&
-                <Grid item xs={12} sm={4}>
-                  <Select
-                    selectChangeHandler={this.selectChangeHandler}
-                    name={'toLanguage'}
-                    label={'To'}
-                    id={'select-to-language'}
-                    helperText={'Required'}
-                    languages={this.state.toLanguagesList}
-                    value={this.state.toLanguage}
-                    isDisabled={this.state.isDisabled}
-                  />
-                </Grid>
-              }
-              {
-                this.state.files && this.state.files.length > 0 && this.state.fromLanguage && this.state.toLanguage &&
-                <Grid item xs={12} sm={4}>
-                  <Button
-                    type="submit"
-                    variant="outlined"
-                    size="large"
-                    className={classes.sendBtn}
-                    startIcon={<SendOutlinedIcon color="inherit" />}
-                    disabled={this.state.isDisabled}>
-                    Translate
-                    </Button>
-                </Grid>
-              }
-            </Grid>
-          </form>
-        </Fragment>
-        <Fragment>
-          <Grid container className={classes.lowerSide}>
-            {
-              this.state.translatedFiles.length > 0 &&
-              this.state.translatedFiles.map((element, index) => (
-                <TranslatedFile
-                  key={index}
-                  file={element}
-                  onClickDelete={this.onClickDelete}
-                  onClickDownload={this.onClickDownload}
-                  isDisabled={this.state.isDisabled} />
-              ))
-            }
-          </Grid>
-        </Fragment>
-        <Fragment>
-          {
-            this.state.translatedFiles.length > 1 &&
-            <Grid container spacing={1} justify="center">
-              <Grid item xs={12} md={6}>
-                <ButtonGroup fullWidth aria-label="full width outlined button group">
-                  <Button
-                    variant="contained"
-                    size="medium"
-                    className={classes.deleteBtn}
-                    startIcon={<DeleteOutlinedIcon color="inherit" />}
-                    onClick={this.onClickDeleteAll}
-                    disabled={this.state.isDisabled}>
-                    Delete All
-                    </Button>
-                  <Button
-                    variant="contained"
-                    size="medium"
-                    className={classes.downloadBtn}
-                    startIcon={<CloudDownloadOutlinedIcon color="inherit" />}
-                    onClick={this.onClickDownloadAll}
-                    disabled={this.state.isDisabled}>
-                    Download All
-                    </Button>
-                </ButtonGroup>
-              </Grid>
-            </Grid>
-          }
-        </Fragment>
-      </div >
-    );
-  }
+  return (
+    <div className={classes.root}>
+      <SuccessSnackbar
+        openSuccessSnackbar={openSuccessSnackbar}
+        text={successMessage} />
+      <WarningMessage
+        showWarningMessage={showWarningMessage}
+        text={`You have reached the maximum of ${MAX_FILE_LIMIT} saved files.`} />
+      {
+        contextTranslatedFiles && contextTranslatedFiles.length < MAX_FILE_LIMIT &&
+        <UploadForm handleSubmit={handleSubmit} disabled={disabled} />
+      }
+      <FileTable disabled={disabled} handleDownload={handleDownload} handleDelete={handleDelete} />
+    </div>
+  );
 }
 
-Documents.propTypes = {
-  classes: PropTypes.object.isRequired,
-};
+const Documents = () => {
+  const classes = useStyles();
+  const { loading, user } = useAuth0();
 
-export default withStyles(styles, { withTheme: true })(Documents);
+  // auth0 user has to be loaded before proceed to DocumentsContent's componentDidMount
+  if (loading || !user) {
+    return (<div className={`${classes.root} ${classes.circular}`}><CircularProgress /></div>);
+  };
+
+  return (<DocumentsContent />);
+}
+
+export default Documents;

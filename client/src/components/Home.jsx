@@ -5,45 +5,74 @@ import CardActionArea from '@material-ui/core/CardActionArea';
 import CardContent from '@material-ui/core/CardContent';
 import CardMedia from '@material-ui/core/CardMedia';
 import Typography from '@material-ui/core/Typography';
-import image2 from '../images/marie-bellando-mitjans-cBChXxQqEKM-unsplash.jpg';
+import image from '../images/document-translation45.jpg';
+
 
 const useStyles = makeStyles(theme => ({
   card: {
     maxWidth: '100vw',
-    maxHeight: '92vh',
     boxShadow: 'none',
-    opacity: '0.8',
+  },
+  action: {
+    maxHeight: '82vh',
   },
   media: {
-    height: '82vh',
+    height: '112vh',
+    opacity: '0.3',
   },
-  myText: {
+  title: {
     position: 'absolute',
-    top: '20vh',
+    top: '30vh',
+    padding: '0 2.5rem',
+    textShadow:
+      '-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 1px 1px 4px #673ab7',
     [theme.breakpoints.up('md')]: {
+      top: '70vh',
       left: '5vw',
+      padding: '0',
+    }
+  },
+  description: {
+    position: 'absolute',
+    fontSize: '20px',
+    top: '15vh',
+    padding: '0 2.5rem',
+    textShadow:
+      '-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 2px 2px 0 #ccc',
+    letterSpacing: '1px',
+    [theme.breakpoints.up('md')]: {
+      top: '60vh',
+      left: '5vw',
+      padding: '0',
+      textShadow:
+        '-1px -1px 1px #fff, 1px -1px 1px #fff, -1px 1px 1px #fff, 1px 1px 1px #fff'
     },
-  }
+  },
 }));
 
 const Home = () => {
   const classes = useStyles();
 
   return (
-    <Card className={classes.card}>
-      <CardActionArea>
-        <CardMedia
-          className={classes.media}
-          image={image2}
-        />
-        <Typography component="h1" variant="h3" className={classes.myText}>Let's get this sheet done</Typography>
+    <div>
+      <Card className={classes.card}>
+        <CardActionArea className={classes.action}>
+          <CardMedia
+            className={classes.media}
+            image={image}
+          />
+          <Typography component="p" className={classes.description}>There’s no better feeling than being clear:</Typography>
+          <Typography component="h1" variant="h4" className={classes.title}>drop your documents and get this sheet done</Typography>
+        </CardActionArea>
+      </Card>
+      <Card className={classes.card}>
         <CardContent>
           <Typography variant="body2" color="textSecondary" component="p">
-            Photo by <a href="https://unsplash.com/@gabianspirit?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText">Marie Bellando-Mitjans</a> on <a href="https://unsplash.com/photos/cBChXxQqEKM">Unsplash</a>
+            Image by <a href="https://www.translatemedia.com/">translatemedia</a>, Copywriting by <a href="https://twitter.com/absolute_basura">Lilia Paz</a>, Font-styling by <a href="https://twitter.com/naomiquinones">Naomi Quiñones</a>
           </Typography>
         </CardContent>
-      </CardActionArea>
-    </Card>
+      </Card>
+    </div>
   );
 }
 

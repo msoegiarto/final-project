@@ -4,7 +4,7 @@
   "description": "A web application to translate document(s)",
   "main": "server.js",
   "scripts": {
-    "start": "node --max-http-header-size=5000000 server.js",
+    "start": "node server.js",
     "client-install": "npm install --prefix client",
     "client": "npm start --prefix client",
     "server": "node server.js",
