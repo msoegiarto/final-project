@@ -28,8 +28,6 @@ const FileItem = props => {
   const [sourceLang, setSourceLang] = useState();
   const [targetLang, setTargetLang] = useState();
 
-  console.log(props);
-
   useEffect(() => {
     const sourceLanguage = languages.find(element => element.key === props.file.sourceLanguage).value || '';
     setSourceLang(sourceLanguage);
