@@ -50,31 +50,30 @@ export const TxtransProvider = ({ children }) => {
     const headers = getRequestHeaders(accessToken, 'multipart/form-data');
 
     const formData = new FormData();
-    formData.append('name', user.name);
     formData.append('authentication', user.sub);
     formData.append('email', user.email);
-    formData.append('fromLanguage', sourceLanguage);
-    formData.append('toLanguage', targetLanguage);
+    formData.append('sourceLanguage', sourceLanguage);
+    formData.append('targetLanguage', targetLanguage);
     files.forEach(file => {
       formData.append('file', file, file.name);
     });
 
     try {
       // this endpoint will only save the uploaded file into the db without calling translation api
-      const response = await axios({
-        url: '/api/translate/documents/save_test',
-        method: 'POST',
-        headers: headers,
-        data: formData,
-      });
-
-      // this endpoint is the real translation api
       // const response = await axios({
-      //   url: '/api/translate/documents/translate',
+      //   url: '/api/translate/documents/save_test',
       //   method: 'POST',
       //   headers: headers,
       //   data: formData,
       // });
+
+      // this endpoint is the real translation api
+      const response = await axios({
+        url: '/api/translate/documents/translate',
+        method: 'POST',
+        headers: headers,
+        data: formData,
+      });
 
       setContextTranslatedFiles(response.data.translatedFiles);
     } catch (err) {
@@ -89,9 +88,9 @@ export const TxtransProvider = ({ children }) => {
     if (id === 'ALL') {
       const tobeDownloadedFileIds = [];
       contextTranslatedFiles.forEach(element => tobeDownloadedFileIds.push({ id: element.id }));
-      data.translatedFiles = tobeDownloadedFileIds;
+      data.translatedFileIds = tobeDownloadedFileIds;
     } else {
-      data.translatedFiles = [{ id: id }];
+      data.translatedFileIds = [{ id: id }];
     }
 
     try {
@@ -115,9 +114,9 @@ export const TxtransProvider = ({ children }) => {
     if (id === 'ALL') {
       const tobeDeletedFileIds = [];
       contextTranslatedFiles.forEach(file => { tobeDeletedFileIds.push({ id: file.id }) });
-      data.translatedFiles = tobeDeletedFileIds;
+      data.translatedFileIds = tobeDeletedFileIds;
     } else {
-      data.translatedFiles = [{ id: id }];
+      data.translatedFileIds = [{ id: id }];
     }
 
     try {

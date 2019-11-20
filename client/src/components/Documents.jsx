@@ -201,8 +201,8 @@ const Documents = () => {
     <div>
       <DocumentsContent />
       <Paper className={classes.footer}>
-        <Typography component="p">
-          Powered by <a href="https://azure.microsoft.com/en-us/services/cognitive-services/translator-text-api/" style={{ color: indigo[900] }}>Microsoft Translator</a>
+        <Typography variant="body2" component="p">
+          Powered by <a href="https://www.microsoft.com/en-us/translator/" style={{ color: indigo[900] }}>Microsoft Translator</a>
         </Typography>
       </Paper>
     </div>
