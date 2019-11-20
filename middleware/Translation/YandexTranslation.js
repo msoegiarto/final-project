@@ -35,7 +35,7 @@ const _constructRequestData = (data) => {
   return _divideTextBasedOnCharLength(dataString);
 }
 
-const _sendRequest = async (stringOfText, fromLanguage, toLanguage) => {
+const _sendRequest = async (stringOfText, sourceLanguage, targetLanguage) => {
   console.log('[YANDEX _sendRequest] START');
 
   const url = process.env.YANDEX_TRANSLATION_TEXT_BASE_URL;
@@ -45,7 +45,7 @@ const _sendRequest = async (stringOfText, fromLanguage, toLanguage) => {
     url: url,
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     data: qs.stringify({
-      lang: `${fromLanguage}-${toLanguage}`,
+      lang: `${sourceLanguage}-${targetLanguage}`,
       key: process.env.YANDEX_TRANSLATION_API_KEY,
       format: 'plain',
       text: stringOfText
@@ -89,12 +89,12 @@ class YandexTranslation {
       throw new Error('Please set/export the following environment variable: YANDEX_TRANSLATION_TEXT_BASE_URL');
   }
 
-  async translate(data, fromLanguage, toLanguage) {
+  async translate(data, sourceLanguage, targetLanguage) {
     const readfileResult = data instanceof Buffer ? _constructRequestData(data) : [data];
     const yandexResults = [];
 
     for (let i = 0; i < readfileResult.length; i++) {
-      const response = await _sendRequest(readfileResult[i], fromLanguage, toLanguage);
+      const response = await _sendRequest(readfileResult[i], sourceLanguage, targetLanguage);
       yandexResults.push(response);
     }
 

@@ -217,7 +217,7 @@ const _constructNewFilename = async (inputUser, oldName, toLang) => {
 
 /** 
  * @param filename
- * format: <filename>_<toLanguage>
+ * format: <filename>_<targetLanguage>
  * example: airbnbGuide_it
 */
 const _getNewFilenameNoExt = async (inputUser, filename) => {
@@ -283,8 +283,8 @@ const _getTranslatedFiles = userFiles => {
       let newObj = {
         id: element._id,
         name: element.file_name,
-        fromLanguage: element.lang_from,
-        toLanguage: element.lang_to
+        sourceLanguage: element.lang_from,
+        targetLanguage: element.lang_to
       };
       translatedFiles.push(newObj);
     });
@@ -348,9 +348,9 @@ router.post('/save_test', async (req, res, next) => {
 
     const uploadedFile = req.files.file; // file=what we define in react
 
-    const { fromLanguage, toLanguage } = req.body;
+    const { sourceLanguage, targetLanguage } = req.body;
 
-    const newFilename = await _constructNewFilename(thisUser, uploadedFile.name, toLanguage);
+    const newFilename = await _constructNewFilename(thisUser, uploadedFile.name, targetLanguage);
 
     // do word count and construct array
     const translationResultArray = msTranslation.constructRequestDataFromBuffer(uploadedFile.data);
@@ -361,8 +361,8 @@ router.post('/save_test', async (req, res, next) => {
       data: buf,
       content_type: 'text/plain',
       file_name: newFilename,
-      lang_from: fromLanguage,
-      lang_to: toLanguage,
+      lang_from: sourceLanguage,
+      lang_to: targetLanguage,
       char_length: translationResultArray.totalCharLength
     };
 
@@ -399,7 +399,7 @@ router.post('/translate_test', async (req, res, next) => {
     // read the file from local directory
     const readfileResult = await msTranslation.readPlainTextFile('../test_file', 'a_spanish_text.txt');
 
-    const result = await msTranslation.translate(readfileResult, req.body.fromLanguage, req.body.toLanguage);
+    const result = await msTranslation.translate(readfileResult, req.body.sourceLanguage, req.body.targetLanguage);
 
     // write the file to local directory
     await msTranslation.writeFile('../test_file', 'newfile.txt', result.textArray);
@@ -418,9 +418,9 @@ router.post('/yandex_test', async (req, res, next) => {
 
     const uploadedFile = req.files.file; // file=what we define in react
 
-    const { fromLanguage, toLanguage } = req.body;
+    const { sourceLanguage, targetLanguage } = req.body;
 
-    const translationResultArray = await yandexTranslation.translate(uploadedFile.data, fromLanguage, toLanguage);
+    const translationResultArray = await yandexTranslation.translate(uploadedFile.data, sourceLanguage, targetLanguage);
 
     await yandexTranslation.writeFile('../../../../test_file', 'newfile.txt', translationResultArray.textArray);
 

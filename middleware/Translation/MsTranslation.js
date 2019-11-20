@@ -138,17 +138,17 @@ const _getTranslationToken = async () => {
  * @function _constructSendRequest
  * @description the function to send translation request
  * @param {Array.<Object>} requestData - an array of texts
- * @param {string} fromLanguage - original language
- * @param {string} toLanguage - target language
+ * @param {string} sourceLanguage - original language
+ * @param {string} targetLanguage - target language
  * @returns {Array.<Object>} an array of objects
  */
-const _constructSendRequest = async (requestData, fromLanguage, toLanguage) => {
+const _constructSendRequest = async (requestData, sourceLanguage, targetLanguage) => {
   console.log('[MS _constructSendRequest] START');
 
   // get the microsoft token
   const token = await _getTranslationToken();
 
-  const url = process.env.MS_TRANSLATION_TEXT_BASE_URL + `&from=${fromLanguage}&to=${toLanguage}&textType=plain`;
+  const url = process.env.MS_TRANSLATION_TEXT_BASE_URL + `&from=${sourceLanguage}&to=${targetLanguage}&textType=plain`;
 
   const msTranslationResult = await axios({
     method: 'POST',
@@ -166,11 +166,11 @@ const _constructSendRequest = async (requestData, fromLanguage, toLanguage) => {
  * @function _constructRequest
  * @description divide the texts into multiple requests based on character limit
  * @param {Array.<Object>} inputArray - an array of texts
- * @param {string} fromLanguage - original language
- * @param {string} toLanguage - target language
+ * @param {string} sourceLanguage - original language
+ * @param {string} targetLanguage - target language
  * @returns {Array.<Function>} an array of Objects, each object value is a '_constructSendRequest' function
  */
-const _constructRequest = (inputArray, fromLanguage, toLanguage) => {
+const _constructRequest = (inputArray, sourceLanguage, targetLanguage) => {
 
   const sendRequestFunction = {};
 
@@ -195,7 +195,7 @@ const _constructRequest = (inputArray, fromLanguage, toLanguage) => {
       arrSliced = inputArray.slice(indices[i - 1] + 1, indices[i]);
     }
     sendRequestFunction['function_' + i] = () => {
-      return _constructSendRequest(arrSliced, fromLanguage, toLanguage);
+      return _constructSendRequest(arrSliced, sourceLanguage, targetLanguage);
     }
   }
 
@@ -331,17 +331,17 @@ class MsTranslation {
    * @function translate
    * @description divide the texts into multiple requests based on character limit
    * @param {Buffer|Object} data - data with type of Buffer
-   * @param {string} fromLanguage - original language
-   * @param {string} toLanguage - target language
+   * @param {string} sourceLanguage - original language
+   * @param {string} targetLanguage - target language
    * @returns {Promise<Object>} totalCharLength<number> and textArray<string[]>
    */
-  async translate(data, fromLanguage, toLanguage) {
+  async translate(data, sourceLanguage, targetLanguage) {
     const readfileResult = data instanceof Buffer ? _constructRequestData(data) : data;
 
     if (!readfileResult || !readfileResult.textArray || readfileResult.textArray.length === 0)
       throw new Error('[MsTranslation.js] something went wrong');
 
-    const requests = _constructRequest(readfileResult.textArray, fromLanguage, toLanguage);
+    const requests = _constructRequest(readfileResult.textArray, sourceLanguage, targetLanguage);
     const responseArray = await _sendRequest(requests);
     const textArray = _consolidateResponseArray(responseArray);
     return new Promise(resolve => resolve({ totalCharLength: readfileResult.totalCharLength, textArray }));
