@@ -2,7 +2,7 @@
 
 This is a webapp that let the users to upload a text file and download the translated file.
 
-Beta site: https://mtl-frontend.herokuapp.com/
+Site: https://txtrans.herokuapp.com/
 
 # Installation
 
