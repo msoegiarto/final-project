@@ -1,8 +1,12 @@
 # Txtrans (Machine translation for txt file)
 
-This is a webapp that let the users to upload a text file and download the translated file.
+__Description__
 
-Site: https://txtrans.herokuapp.com/
+This is a webapp that lets users upload a text file and download the translated file.
+
+__Site__
+
+https://txtrans.herokuapp.com/
 
 # Installation
 
