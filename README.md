@@ -2,7 +2,7 @@
 
 __Description__
 
-This is a webapp that lets users upload text files and download a translated version of the files.
+This is a webapp that lets users upload text files, choose source and target languages and download a translated version of the files.
 
 __Site__
 
