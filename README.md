@@ -154,3 +154,9 @@ __Backend__
    ```
    
    Delete the saved document(s)
+
+# Nice to have
+
+1. User can choose multiple output languages
+
+2. Support more file formats
