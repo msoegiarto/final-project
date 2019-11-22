@@ -14,8 +14,7 @@ const UserfilesSchema = new Schema({
   file_name: {
     type: String,
     trim: true,
-    required: true,
-    unique: true
+    required: true
   },
   lang_from: {
     type: String,
