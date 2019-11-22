@@ -34,7 +34,7 @@ https://txtrans.herokuapp.com/
     REACT_APP_AUTH0_REDIRECT_URI=<redirect_uri_after_login>
     REACT_APP_AUTH0_RETURN_TO=<redirect_uri_after_logout>
 
-    REACT_APP_MTL_BASE_API=<your_backend_server>
+    REACT_APP_TXTRANS_BASE_API=<your_backend_server> eg. http://localhost:5000
     ```
 
 4.  Install the dependencies
