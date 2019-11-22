@@ -65,14 +65,36 @@ MySnackbarContentWrapper.propTypes = {
 };
 
 export default function MessageSnackbars(props) {
+  const queueRef = React.useRef([]);
   const [open, setOpen] = React.useState(false);
+  const [messageInfo, setMessageInfo] = React.useState(undefined);
+
   const { text, variant } = props;
 
   React.useEffect(() => {
     if (props.openSnackbar) {
+      queueRef.current.push({
+        message: text,
+        key: new Date().getTime(),
+      });
+  
+      if (open) {
+        // immediately begin dismissing current message
+        // to start showing new one
+        setOpen(false);
+      } else {
+        processQueue();
+      }
+    } 
+    // eslint-disable-next-line
+  }, [props.openSnackbar]);
+
+  const processQueue = () => {
+    if (queueRef.current.length > 0) {
+      setMessageInfo(queueRef.current.shift());
       setOpen(true);
     }
-  }, [props.openSnackbar]);
+  };
 
   const handleClose = (event, reason) => {
     if (reason === 'clickaway') {
@@ -82,6 +104,10 @@ export default function MessageSnackbars(props) {
     setOpen(false);
   };
 
+  const handleExited = () => {
+    processQueue();
+  };
+
   return (
     <Snackbar
       anchorOrigin={{
@@ -89,13 +115,14 @@ export default function MessageSnackbars(props) {
         horizontal: 'left',
       }}
       open={open}
-      autoHideDuration={6000}
+      autoHideDuration={2000}
       onClose={handleClose}
+      onExited={handleExited}
     >
       <MySnackbarContentWrapper
         onClose={handleClose}
         variant={variant}
-        message={text}
+        message={messageInfo ? messageInfo.message : undefined}
       />
     </Snackbar>
   );
