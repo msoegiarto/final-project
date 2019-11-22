@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import axios from 'axios';
 import config from '../config';
 
-axios.defaults.baseURL = config.baseMtlApiUrl;
+axios.defaults.baseURL = config.baseApiUrl;
 
 const getRequestHeaders = (accessToken, contentType) => {
   return {
@@ -60,20 +60,20 @@ export const TxtransProvider = ({ children }) => {
 
     try {
       // this endpoint will only save the uploaded file into the db without calling translation api
-      // const response = await axios({
-      //   url: '/api/translate/documents/save_test',
-      //   method: 'POST',
-      //   headers: headers,
-      //   data: formData,
-      // });
-
-      // this endpoint is the real translation api
       const response = await axios({
-        url: '/api/translate/documents/translate',
+        url: '/api/translate/documents/save_test',
         method: 'POST',
         headers: headers,
         data: formData,
       });
+
+      // this endpoint is the real translation api
+      // const response = await axios({
+      //   url: '/api/translate/documents/translate',
+      //   method: 'POST',
+      //   headers: headers,
+      //   data: formData,
+      // });
 
       setContextTranslatedFiles(response.data.translatedFiles);
     } catch (err) {
