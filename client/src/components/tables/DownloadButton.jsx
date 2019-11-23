@@ -44,7 +44,7 @@ const DownloadButton = props => {
           size="medium"
           variant="outlined"
           {...other}>
-          <CloudDownloadOutlinedIcon color="inherit" />{btnType ? ' ' + btnType : ''}
+          <CloudDownloadOutlinedIcon color="inherit" />{btnType ? <span style={{marginLeft: '1vw'}}>{btnType}</span> : ''}
         </GreenButton>
       </Hidden>
     </Fragment>
