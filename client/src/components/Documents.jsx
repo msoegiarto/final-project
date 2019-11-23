@@ -189,7 +189,7 @@ const Documents = () => {
   const classes = useStyles();
   const { loading, user } = useAuth0();
 
-  // auth0 user has to be loaded before proceed to DocumentsContent's componentDidMount
+  // auth0's user has to be loaded before proceeding to DocumentsContent otherwise would throw error
   if (loading || !user) {
     return (
       <div className={`${classes.root} ${classes.circular}`}>
