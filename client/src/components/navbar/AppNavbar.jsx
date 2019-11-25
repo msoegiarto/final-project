@@ -24,6 +24,13 @@ const useStyles = makeStyles(theme => ({
     flexGrow: 1,
     textAlign: "left",
   },
+  link: {
+    textDecoration: 'none',
+    color: '#424242',
+    '&:hover': {
+      color: theme.palette.getContrastText(blueGrey[800]),
+    },
+  },
   linkBtn: {
     '&:hover': {
       color: theme.palette.getContrastText(blueGrey[800]),
@@ -68,9 +75,10 @@ const AppNavBar = () => {
             isAuthenticated &&
             (
               <Fragment>
-                <Button className={classes.linkBtn} component="a" href="/documents">
-                  Documents
+                <Button className={classes.linkBtn} component="button">
+                  <Link to="/documents" className={classes.link}>Documents</Link>
                 </Button>
+
                 <Button className={classes.logoutBtn} onClick={() => logout({})}>Logout</Button>
               </Fragment>
             )
