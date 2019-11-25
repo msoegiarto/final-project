@@ -15,6 +15,10 @@ app.use(fileUpload({
   limits: { fileSize: 100000 },
 }));
 app.use(cors({ exposedHeaders: 'Content-Disposition' }));
+app.use((req, res, next) => {
+  res.setHeader("Set-Cookie", "HttpOnly;Secure;SameSite=Strict");
+  next();
+});
 
 // environment variables validation
 if (!process.env.MONGO_URI)
