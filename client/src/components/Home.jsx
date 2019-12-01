@@ -1,11 +1,13 @@
 import React from 'react';
 import { makeStyles } from '@material-ui/core/styles';
+import { deepPurple } from '@material-ui/core/colors';
 import Card from '@material-ui/core/Card';
 import CardActionArea from '@material-ui/core/CardActionArea';
 import CardContent from '@material-ui/core/CardContent';
 import CardMedia from '@material-ui/core/CardMedia';
 import Typography from '@material-ui/core/Typography';
 import image from '../images/document-translation45.jpg';
+import { NONAME } from 'dns';
 
 
 const useStyles = makeStyles(theme => ({
@@ -48,6 +50,13 @@ const useStyles = makeStyles(theme => ({
         '-1px -1px 1px #fff, 1px -1px 1px #fff, -1px 1px 1px #fff, 1px 1px 1px #fff'
     },
   },
+  credits: {
+    color: deepPurple[900],
+    textDecoration: 'none',
+    '&:hover': {
+      color: deepPurple['A700'],
+    }
+  },
 }));
 
 const Home = () => {
@@ -68,7 +77,7 @@ const Home = () => {
       <Card className={classes.card}>
         <CardContent>
           <Typography variant="body2" color="textSecondary" component="p">
-            Image by <a href="https://www.translatemedia.com/">translatemedia</a>, Copywriting by <a href="https://twitter.com/absolute_basura">Lilia Paz</a>, Font-styling by <a href="https://twitter.com/naomiquinones">Naomi Quiñones</a>
+            Image by <a href="https://www.translatemedia.com/" className={classes.credits}>translatemedia</a>, Copywriting by <a href="https://twitter.com/absolute_basura" className={classes.credits}>Lilia Paz</a>, Font-styling by <a href="https://twitter.com/naomiquinones" className={classes.credits}>Naomi Quiñones</a>
           </Typography>
         </CardContent>
       </Card>
